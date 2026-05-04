@@ -3,28 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chef's Kiss English | Интерактивные тренажеры</title>
+    <title>Chef's Kiss English | Cyber-Store</title>
+    <!-- Подключаем киберпанк-шрифт из твоих тренажеров -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: rgba(31, 40, 51, 0.8);
+            --neon-cyan: #00ffff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff66;
+            --text-main: #c5c6c7;
+        }
+
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #f4f7f6; 
-            color: #333; 
+            font-family: 'Orbitron', sans-serif; 
+            background-color: var(--bg-color); 
+            background-image: 
+                linear-gradient(rgba(0, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: var(--text-main); 
             margin: 0; 
             padding: 0; 
         }
+
         header { 
-            background: #1f2833; 
-            color: #66fcf1; 
+            background: rgba(0, 0, 0, 0.8); 
             padding: 3rem 1rem; 
             text-align: center; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-bottom: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
         }
-        h1 { margin: 0; font-size: 2.8rem; letter-spacing: 2px; text-transform: uppercase; }
-        .subtitle { font-size: 1.2rem; color: #c5c6c7; margin-top: 10px; }
+
+        h1 { 
+            margin: 0; 
+            font-size: 3rem; 
+            color: #fff;
+            text-transform: uppercase; 
+            text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+        }
+
+        .subtitle { 
+            font-size: 1.2rem; 
+            color: var(--neon-pink); 
+            margin-top: 15px; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 5px var(--neon-pink);
+        }
         
         .container { 
             max-width: 1100px; 
-            margin: 3rem auto; 
+            margin: 4rem auto; 
             padding: 0 20px; 
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
@@ -32,28 +63,52 @@
         }
         
         .card { 
-            background: #fff; 
-            border-radius: 15px; 
+            background: var(--panel-bg); 
+            border-radius: 10px; 
             overflow: hidden; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.08); 
-            transition: transform 0.3s, box-shadow 0.3s; 
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.1); 
+            transition: all 0.3s ease; 
             display: flex; 
             flex-direction: column;
-            border: 1px solid #eee;
+            backdrop-filter: blur(5px);
         }
+
         .card:hover { 
             transform: translateY(-10px); 
-            box-shadow: 0 15px 30px rgba(102, 252, 241, 0.2); 
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.4), inset 0 0 15px rgba(0, 255, 255, 0.2); 
+            border-color: #fff;
         }
         
-        .card-img { 
-            background: linear-gradient(135deg, #45a29e, #1f2833); 
-            height: 200px; 
+        .card-img-box { 
+            height: 220px; 
+            background: #000; 
+            border-bottom: 2px solid var(--neon-cyan);
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            color: #fff; 
-            font-size: 5rem; 
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Это стиль для твоих будущих скриншотов */
+        .card-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.8;
+            transition: 0.3s;
+        }
+
+        .card:hover .card-img-box img {
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        /* Заглушка, пока нет скрина */
+        .no-screen {
+            font-size: 4rem;
+            text-shadow: 0 0 15px var(--neon-cyan);
         }
         
         .card-content { 
@@ -63,21 +118,36 @@
             flex-direction: column;
         }
         
-        .card-title { font-size: 1.5rem; margin: 0 0 15px 0; color: #1f2833; font-weight: bold; }
-        .card-desc { line-height: 1.6; color: #555; flex-grow: 1; font-size: 1rem;}
+        .card-title { 
+            font-size: 1.5rem; 
+            margin: 0 0 15px 0; 
+            color: #fff; 
+            text-transform: uppercase;
+            text-shadow: 0 0 8px #fff;
+        }
+
+        .card-desc { 
+            line-height: 1.6; 
+            color: #aaa; 
+            flex-grow: 1; 
+            font-size: 0.95rem;
+            font-family: 'Segoe UI', sans-serif; /* Описание читаемым шрифтом */
+        }
         
-        .feature-list { padding-left: 20px; margin-top: 15px; color: #444; }
+        .feature-list { padding-left: 20px; margin-top: 15px; color: #ddd; }
         .feature-list li { margin-bottom: 8px; }
+        .feature-list b { color: var(--neon-cyan); font-family: 'Orbitron', sans-serif;}
         
         .chrome-badge { 
             display: inline-block; 
-            background: #ffeaa7; 
-            color: #d35400; 
-            padding: 5px 10px; 
+            background: rgba(255, 0, 255, 0.1); 
+            color: var(--neon-pink); 
+            padding: 8px 12px; 
             border-radius: 5px; 
+            border: 1px dashed var(--neon-pink);
             font-size: 0.85rem; 
-            font-weight: bold; 
-            margin-top: 10px;
+            margin-top: 15px;
+            text-shadow: 0 0 5px rgba(255, 0, 255, 0.5);
         }
 
         .price-buy { 
@@ -86,27 +156,36 @@
             align-items: center; 
             margin-top: 25px; 
             padding-top: 20px; 
-            border-top: 1px solid #f0f0f0; 
+            border-top: 1px dashed #333; 
         }
         
-        .price { font-size: 1.8rem; font-weight: bold; color: #45a29e; }
+        .price { 
+            font-size: 1.8rem; 
+            font-weight: bold; 
+            color: var(--neon-green); 
+            text-shadow: 0 0 10px var(--neon-green);
+        }
         
         .buy-btn { 
-            background: #66fcf1; 
-            color: #1f2833; 
-            border: none; 
+            background: transparent; 
+            color: var(--neon-cyan); 
+            border: 2px solid var(--neon-cyan); 
             padding: 12px 25px; 
-            border-radius: 8px; 
+            border-radius: 5px; 
             font-size: 1.1rem; 
             cursor: pointer; 
+            font-family: 'Orbitron', sans-serif;
             font-weight: bold; 
             transition: 0.3s; 
             text-transform: uppercase;
             text-decoration: none;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
         }
+
         .buy-btn:hover { 
-            background: #45a29e; 
-            color: #fff;
+            background: var(--neon-cyan); 
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
         }
     </style>
 </head>
@@ -114,14 +193,19 @@
 
     <header>
         <h1>Chef's Kiss English</h1>
-        <div class="subtitle">Интерактивные тренажеры для ярких уроков</div>
+        <div class="subtitle">SYSTEM.OVERRIDE // Interactive Tools</div>
     </header>
 
     <div class="container">
         
         <!-- ИГРА 1: НЕПРАВИЛЬНЫЕ ГЛАГОЛЫ -->
         <div class="card">
-            <div class="card-img">🎮</div>
+            <div class="card-img-box">
+                <!-- КОГДА БУДЕТ СКРИНШОТ, УДАЛИ СТРОЧКУ НИЖЕ С КЛАССОМ no-screen -->
+                <div class="no-screen">🎮</div>
+                <!-- И РАСКОММЕНТИРУЙ (УБЕРИ <!- - И - ->) СТРОЧКУ НИЖЕ, ВПИСАВ ИМЯ КАРТИНКИ -->
+                <!-- <img src="screen-verbs.jpg" alt="Irregular Verbs"> -->
+            </div>
             <div class="card-content">
                 <h2 class="card-title">Irregular Verbs: Gamer Edition</h2>
                 <div class="card-desc">
@@ -129,33 +213,38 @@
                     <ul class="feature-list">
                         <li><b>Панель управления:</b> Вы сами отмечаете галочками те глаголы, которые хотите потренировать с учеником.</li>
                         <li><b>Быстрый экспорт:</b> Генерация готового iframe-кода для мгновенной вставки в Genially.</li>
-                        <li><b>6 этапов усложнения:</b> От простых двухсторонних карточек для запоминания до финального босса, где ученик вписывает все три формы по памяти.</li>
+                        <li><b>6 этапов усложнения:</b> От простых карточек до финального босса.</li>
                     </ul>
                 </div>
                 <div class="price-buy">
-                    <div class="price">500 руб</div>
-                    <a href="#" class="buy-btn">Купить</a>
+                    <div class="price">500 ₽</div>
+                    <a href="#" class="buy-btn">ACCESS</a>
                 </div>
             </div>
         </div>
 
         <!-- ИГРА 2: ЗАУЧИВАНИЕ СЛОВ -->
         <div class="card">
-            <div class="card-img">🧠</div>
+            <div class="card-img-box">
+                <!-- КОГДА БУДЕТ СКРИНШОТ, УДАЛИ СТРОЧКУ НИЖЕ С КЛАССОМ no-screen -->
+                <div class="no-screen">🧠</div>
+                <!-- И РАСКОММЕНТИРУЙ СТРОЧКУ НИЖЕ, ВПИСАВ ИМЯ КАРТИНКИ -->
+                <!-- <img src="screen-words.jpg" alt="EngSmart"> -->
+            </div>
             <div class="card-content">
-                <h2 class="card-title">Тренажер слов: EngSmart 3.0</h2>
+                <h2 class="card-title">EngSmart 3.0: Word Matrix</h2>
                 <div class="card-desc">
-                    Универсальный генератор словарных тренировок. Создавайте красивые интерактивные задания со своими списками слов за пару минут!
+                    Универсальный генератор словарных тренировок. Создавайте интерактивные задания со своими списками слов за пару минут!
                     <ul class="feature-list">
-                        <li><b>Полная кастомизация:</b> Вставьте свой список слов с переводом и добавьте любой фоновый рисунок.</li>
-                        <li><b>4 уровня сложности:</b> Интерактивные карточки, "найди пару", "собери слово по буквам" и самостоятельное написание.</li>
+                        <li><b>Кастомизация:</b> Вставьте свой список слов с переводом и добавьте любой фон.</li>
+                        <li><b>4 уровня сложности:</b> Интерактивные карточки, "найди пару" и самостоятельное написание.</li>
                         <li><b>Интеграция:</b> Выдает готовый iframe-код для Genially.</li>
                     </ul>
-                    <div class="chrome-badge">⚡ Рекомендуется открывать в Google Chrome для идеального произношения слов</div>
+                    <div class="chrome-badge">ВНИМАНИЕ: Требуется Google Chrome для идеального синтеза речи</div>
                 </div>
                 <div class="price-buy">
-                    <div class="price">500 руб</div>
-                    <a href="#" class="buy-btn">Купить</a>
+                    <div class="price">500 ₽</div>
+                    <a href="#" class="buy-btn">ACCESS</a>
                 </div>
             </div>
         </div>
