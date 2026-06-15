@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Magic Tic-Tac-Toe Constructor v2.3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Orbitron:wght@700&family=Bangers&family=Caveat:wght@700&family=Pacifico&family=Amatic+SC:wght@700&family=Russo+One&family=Lobster&family=Press+Start+2P&family=Oswald:wght@700&family=Montserrat:wght@800&family=Nunito:wght@800&family=Pangolin&family=Rubik+Mono+One&family=Seymour+One&family=Jura:wght@700&family=Marmelad&family=Kurale&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #0f0c29; color: #eee; font-family: 'Comfortaa', sans-serif; display: grid; grid-template-columns: 400px 1fr; gap: 0; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+        
+        /* Панель настроек */
+        .panel { background: #1a163a; padding: 20px; border-right: 2px solid #f9a826; height: 100vh; overflow-y: auto; box-sizing: border-box; box-shadow: 5px 0 30px rgba(0,0,0,0.8); }
+        .panel::-webkit-scrollbar { width: 8px; }
+        .panel::-webkit-scrollbar-thumb { background: #f9a826; border-radius: 4px; }
+        
+        .section-title { color: #f9a826; font-size: 14px; font-weight: bold; border-bottom: 1px dashed #f9a826; padding-bottom: 5px; margin: 15px 0 10px 0; text-transform: uppercase; }
+        .group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+        .group-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;}
+        input[type="text"], select, textarea { background: #2a2456; border: 1px solid #4a3f85; color: white; padding: 8px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box; font-family: 'Comfortaa';}
+        input[type="file"] { font-size: 11px; color: #aaa; background: #2a2456; border: 1px solid #4a3f85; padding: 4px; border-radius: 4px; width: 100%; box-sizing: border-box;}
+        textarea { resize: vertical; min-height: 80px; white-space: pre-wrap; font-family: monospace; font-size: 12px; overflow-x: hidden; }
+        
+        .btn-mini { background: #f9a826; color: #1a163a; border: none; border-radius: 4px; padding: 8px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; width: 100%; }
+        .btn-mini:hover { background: #ffbe5c; }
+
+        /* Игровое поле */
+        #game-area { position: relative; display: flex; flex-direction: column; align-items: center; background: radial-gradient(circle, #241b4d 0%, #0f0c29 100%); background-size: cover; background-position: center; transition: 0.3s; overflow: hidden; padding-top: 20px;}
+        
+        #score-board { font-family: 'Bangers', cursive; font-size: 32px; display: flex; gap: 40px; margin-bottom: 10px; z-index: 10; background: rgba(0,0,0,0.5); padding: 10px 30px; border-radius: 15px; border: 2px solid #f9a826; box-shadow: 0 0 20px rgba(0,0,0,0.5);}
+        #score-p1 { color: #00e676; text-shadow: 2px 2px 0px #000; transition: 0.3s; }
+        #score-p2 { color: #ff4081; text-shadow: 2px 2px 0px #000; transition: 0.3s; }
+
+        #status-text { font-family: 'Bangers', cursive; font-size: 36px; color: #f9a826; text-shadow: 2px 2px 0px #000, 0 0 15px #f9a826; margin-bottom: 20px; letter-spacing: 2px; text-align: center; z-index: 10; transition: color 0.3s, text-shadow 0.3s;}
+
+        /* КЛАСС ДЛЯ РАСТЯГИВАНИЯ И ПЕРЕТАСКИВАНИЯ */
+        .draggable-resizable { flex-shrink: 0; resize: both; overflow: hidden; border: 1px dashed transparent; transition: border 0.2s; display: flex; justify-content: center; align-items: center; cursor: grab; min-width: 100px; min-height: 100px; background: rgba(0,0,0,0.01);}
+        .draggable-resizable:hover { border: 1px dashed rgba(249, 168, 38, 0.8); }
+        .draggable-resizable:active { cursor: grabbing; }
+
+        /* Лампа и анимация */
+        #lamp-container { position: absolute; top: 140px; left: calc(50% - 75px); width: 150px; height: 120px; z-index: 15;}
+        .lamp-img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 0 15px #f9a826); pointer-events: none; }
+        .hand-img { position: absolute; width: 60%; height: 60%; top: 10%; left: 30%; object-fit: contain; opacity: 0; pointer-events: none; z-index: 15;}
+        
+        @keyframes rubLamp {
+            0% { transform: translateX(0) translateY(0) rotate(0deg); opacity: 1; }
+            20% { transform: translateX(-30%) translateY(10%) rotate(-15deg); opacity: 1; }
+            40% { transform: translateX(20%) translateY(-5%) rotate(10deg); opacity: 1; }
+            60% { transform: translateX(-30%) translateY(10%) rotate(-15deg); opacity: 1; }
+            80% { transform: translateX(20%) translateY(-5%) rotate(10deg); opacity: 1; }
+            100% { transform: translateX(0) translateY(0) rotate(0deg); opacity: 0; }
+        }
+        .is-rubbing { animation: rubLamp 1.5s ease-in-out forwards; }
+
+        /* Сетка крестиков-ноликов */
+        .board { position: absolute; top: 280px; left: calc(50% - 195px); width: 390px; height: 390px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: repeat(3, minmax(0, 1fr)); grid-gap: 10px; z-index: 10; padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 2px solid #4a3f85; box-sizing: border-box;}
+        .cell { width: 100%; height: 100%; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 60px; cursor: pointer; transition: 0.2s; position: relative; min-width: 0; min-height: 0; overflow: hidden;}
+        .cell:hover { background: rgba(255,255,255,0.2); }
+        .cell img { width: 80%; height: 80%; object-fit: contain; animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) both; pointer-events: none; }
+        .cell.disabled { cursor: not-allowed; }
+        
+        @keyframes popIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+        /* Линия победы */
+        #win-line { position: absolute; background: #f9a826; z-index: 15; transform-origin: left center; display: none; border-radius: 5px; box-shadow: 0 0 15px #f9a826; pointer-events: none;}
+
+        /* Модальное окно с вопросом */
+        #modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 50; backdrop-filter: blur(5px);}
+        .modal-box { background: linear-gradient(135deg, #2a2456, #1a163a); padding: 30px; border-radius: 15px; border: 2px solid #f9a826; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 40px #000; animation: popIn 0.3s ease-out; }
+        .modal-question { font-size: 22px; margin-bottom: 25px; color: white; font-weight: bold;}
+        
+        .ans-btn { background: rgba(255,255,255,0.1); border: 2px solid #f9a826; color: #f9a826; padding: 12px; margin: 5px 0; width: 100%; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; font-family: 'Comfortaa';}
+        .ans-btn:hover { background: #f9a826; color: #1a163a; }
+        
+        #ans-input { width: 100%; padding: 12px; font-size: 18px; border: 2px solid #f9a826; border-radius: 8px; background: rgba(0,0,0,0.3); color: white; text-align: center; margin-bottom: 15px;}
+        #submit-ans-btn { background: #f9a826; color: #1a163a; font-size: 18px; padding: 10px; width: 100%; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;}
+        #submit-ans-btn:hover { background: #ffbe5c; }
+        
+        /* Окно победы с Картинкой */
+        #win-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .win-box { text-align: center; animation: popIn 0.5s ease-out; display: flex; flex-direction: column; align-items: center;}
+        .win-title { font-family: 'Bangers', cursive; font-size: 60px; color: #00e676; text-shadow: 0 0 20px #00e676; margin-bottom: 20px;}
+        
+        /* ДОБАВЛЕН PADDING ЧТОБЫ АНИМАЦИЯ НЕ ОБРЕЗАЛАСЬ */
+        #win-img-wrapper { position: relative; width: 300px; height: 300px; margin-bottom: 20px; display: none; padding: 50px; box-sizing: border-box; }
+        #win-img-visual { width: 100%; height: 100%; object-fit: contain; }
+
+        .win-btn { font-size: 24px; font-family: 'Bangers'; padding: 10px 40px; background: #f9a826; border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; }
+        .win-btn:hover { transform: scale(1.1); }
+
+        /* 10 АНИМАЦИЙ ДЛЯ ПОБЕДНОЙ КАРТИНКИ */
+        @keyframes anim-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-40px); } }
+        @keyframes anim-wave { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
+        @keyframes anim-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(15px, -20px); } }
+        @keyframes anim-shake { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-10px, 10px); } 50% { transform: translate(10px, -10px); } 75% { transform: translate(-10px, -10px); } }
+        @keyframes anim-swing { 0%, 100% { transform: rotate(-15deg); } 50% { transform: rotate(15deg); } }
+        @keyframes anim-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+        @keyframes anim-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes anim-elastic { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.2, 0.8); } }
+        @keyframes anim-jump { 0%, 100% { transform: translateY(0); } 20% { transform: translateY(-60px) scale(0.9, 1.1); } }
+        @keyframes anim-flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; filter: hue-rotate(90deg); } }
+
+        .anim-bounce { animation: anim-bounce 1s infinite ease-in-out; }
+        .anim-wave { animation: anim-wave 2s infinite ease-in-out; }
+        .anim-float { animation: anim-float 3s infinite ease-in-out; }
+        .anim-shake { animation: anim-shake 0.3s infinite linear; }
+        .anim-swing { animation: anim-swing 2s infinite ease-in-out; }
+        .anim-pulse { animation: anim-pulse 1s infinite ease-in-out; }
+        .anim-breathe { animation: anim-breathe 4s infinite ease-in-out; }
+        .anim-elastic { animation: anim-elastic 1s infinite ease-in-out; }
+        .anim-jump { animation: anim-jump 1.5s infinite ease-in-out; }
+        .anim-flicker { animation: anim-flicker 0.2s infinite linear; }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <h2 style="font-family: 'Bangers'; color: #f9a826; text-align: center; font-size: 28px; margin: 0 0 10px 0; letter-spacing: 2px;">Конструктор Игры v2.3</h2>
+        
+        <div class="section-title" style="color: #ff5722; margin-top: 0;">💾 БАЗА ПРЕСЕТОВ (СОХРАНЕНИЕ)</div>
+        <div class="group-row">
+            <input type="text" id="presetName" placeholder="Имя (напр: Урок 1)" style="flex: 2;">
+            <button id="savePresetBtn" class="btn-mini" style="background: #ff5722; color: white; flex: 1;">Сохранить</button>
+        </div>
+        <div class="group-row" style="margin-top: 5px;">
+            <select id="presetSelect" style="flex: 2;">
+                <option value="">-- Выбери пресет --</option>
+            </select>
+            <button id="loadPresetBtn" class="btn-mini" style="background: #205c8a; flex: 0.5;">Загрузить</button>
+            <button id="delPresetBtn" class="btn-mini" style="background: #5e1313; flex: 0.5;">Удалить</button>
+        </div>
+
+        <div class="section-title">Игрок 1 (Ходит Первым)</div>
+        <div class="group-row">
+            <input type="text" id="p1Name" value="Аладдин" placeholder="Имя 1">
+            <input type="text" id="p1IconUrl" value="https://media.tenor.com/J33LNgUgh2AAAAAi/gennie-jinni.gif" placeholder="URL картинки (фигурки)">
+        </div>
+
+        <div class="section-title">Игрок 2</div>
+        <div class="group-row">
+            <input type="text" id="p2Name" value="Жасмин" placeholder="Имя 2">
+            <input type="text" id="p2IconUrl" value="https://media.tenor.com/gggJn28WXVwAAAAi/esmeralda-gypsy.gif" placeholder="URL картинки (фигурки)">
+        </div>
+
+        <div class="section-title">Волшебная Лампа</div>
+        <div class="group">
+            <label>Лампа (Файл или URL)</label>
+            <input type="file" id="lampUploadFile" accept="image/*">
+            <input type="text" id="lampUrl" value="https://media.tenor.com/tnN60m3qtNAAAAAi/magic-lamp.gif" placeholder="URL картинки Лампы">
+        </div>
+        <div class="group">
+            <label>Рука (Файл или URL)</label>
+            <input type="file" id="handUploadFile" accept="image/*">
+            <input type="text" id="handUrl" placeholder="URL картинки Руки">
+        </div>
+        
+        <div class="section-title" style="color: #00e676;">🏆 Картинка при Победе</div>
+        <div class="group">
+            <input type="file" id="winImgUpload" accept="image/*" title="Файл коврика или бравл старс">
+            <input type="text" id="winImgUrl" placeholder="Или URL картинки...">
+        </div>
+        <div class="group">
+            <label>Анимация картинки</label>
+            <select id="winAnimStyle">
+                <option value="none">🛑 Статика (Без анимации)</option>
+                <option value="anim-bounce">🦘 Прыжок</option>
+                <option value="anim-wave">🌊 Волна</option>
+                <option value="anim-float" selected>🎈 Парение (Космос)</option>
+                <option value="anim-shake">🫨 Землетрясение</option>
+                <option value="anim-swing">🕰️ Маятник (Вращение)</option>
+                <option value="anim-pulse">💓 Пульс (Размер)</option>
+                <option value="anim-breathe">😮‍💨 Дыхание (Плавно)</option>
+                <option value="anim-elastic">🪀 Желе (Растяжение)</option>
+                <option value="anim-jump">🚀 Попрыгунчик</option>
+                <option value="anim-flicker">⚡ Дерганый Неон</option>
+            </select>
+        </div>
+        <div class="group">
+            <button id="previewWinBtn" class="btn-mini" style="background: #00e676; color: black; font-size: 14px; padding: 10px;">👀 Предпросмотр победы</button>
+        </div>
+
+        <div class="section-title">Задний фон игры</div>
+        <div class="group">
+            <input type="file" id="bgUploadFile" accept="image/*">
+            <input type="text" id="bgUrl" value="https://img.genially.com/66f3a31bcd1a12001568ab85/7c3506d7-d263-4a7c-8a9a-a6006e521d67.png" placeholder="Или URL красивого фона">
+        </div>
+
+        <div class="section-title" style="color: #00bcd4;">Атмосфера Игры (Шрифты)</div>
+        <div class="group">
+            <label>Шрифт для текстов</label>
+            <select id="gameFontSelect">
+                <option value="'Comfortaa', sans-serif">Comfortaa (Стандартный)</option>
+                <option value="'Bangers', cursive">Bangers (Комиксы)</option>
+                <option value="'Orbitron', sans-serif">Orbitron (Космос)</option>
+                <option value="'Caveat', cursive">Caveat (Игривая ручка)</option>
+                <option value="'Pacifico', cursive">Pacifico (Надпись)</option>
+                <option value="'Amatic SC', cursive">Amatic (Тонкий Мультик)</option>
+                <option value="'Russo One', sans-serif">Russo One (Широкий/Брутальный)</option>
+                <option value="'Lobster', cursive">Lobster (Праздничный)</option>
+                <option value="'Press Start 2P', cursive">Press Start (Пиксельный/Денди)</option>
+                <option value="'Oswald', sans-serif">Oswald (Высокий/Стильный)</option>
+                <option value="'Montserrat', sans-serif">Montserrat (Четкий/Модный)</option>
+                <option value="'Nunito', sans-serif">Nunito (Мягкий/Детский)</option>
+                <option value="'Pangolin', cursive">Pangolin (Веселый маркером)</option>
+                <option value="'Rubik Mono One', sans-serif">Rubik Mono (Толстячок)</option>
+                <option value="'Seymour One', sans-serif">Seymour (Пухлый)</option>
+                <option value="'Jura', sans-serif">Jura (Техно/Кибер)</option>
+                <option value="'Marmelad', sans-serif">Marmelad (Аккуратный книжный)</option>
+                <option value="'Kurale', serif">Kurale (Сказочный)</option>
+                <option value="'Comic Sans MS', cursive, sans-serif">Comic Sans (Классика)</option>
+                <option value="'Trebuchet MS', sans-serif">Trebuchet (Строгий)</option>
+            </select>
+        </div>
+        <div class="group-row">
+            <label>Пипетка цвета:</label>
+            <input type="color" id="gameTextColor" value="#f9a826" style="width: 100%; height: 35px; border: none; border-radius: 4px; cursor: pointer; background: transparent; padding: 0;">
+        </div>
+
+        <div class="section-title">Настройки вопросов</div>
+        <div class="group">
+            <label>Формат ответа:</label>
+            <select id="questionMode">
+                <option value="choice" selected>Выбор из 3 вариантов</option>
+                <option value="input">Вписать ответ самому</option>
+            </select>
+        </div>
+        
+        <div class="group">
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 1;"><label style="font-size: 12px; color: white;">ВОПРОСЫ</label></div>
+                <div style="flex: 1;"><label style="font-size: 12px; color: white;">ОТВЕТЫ</label></div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <textarea id="questionsDb" style="flex: 1; min-height: 120px;" placeholder="Вопрос 1&#10;Вопрос 2">He ___ to school every day.
+She ___ a book right now.
+___ you like apples?
+They ___ play tennis.
+I ___ seen this movie yet.
+Look! The monkey ___ the banana!</textarea>
+                <textarea id="answersDb" style="flex: 1; min-height: 120px;" placeholder="Вариант1 | Вариант2 | Вариант3">goes*|go|going
+is reading*|reads|read
+Do*|Does|Are
+don't*|doesn't|aren't
+haven't*|didn't|don't
+is stealing*|steals|steal</textarea>
+            </div>
+            <small style="color: #666; font-size: 10px;">Добавь звездочку (*) к правильному ответу (напр: goes*|go|going).</small>
+        </div>
+
+        <div class="group-row" style="margin-top: 20px;">
+            <button id="restartBtn" class="btn-mini" style="font-size: 14px; padding: 12px; background: #205c8a; color: white;">🔄 Рестарт Поля</button>
+            <button id="resetScoreBtn" class="btn-mini" style="font-size: 14px; padding: 12px; background: #ff4081; color: white;">🗑️ Сброс Счета</button>
+        </div>
+        
+        <div class="group" style="margin-top: 10px;">
+            <button id="copyIframeBtn" class="btn-mini" style="font-size: 14px; padding: 12px; background: #00e676; color: black; box-shadow: 0 0 10px #00e676;">📋 Скопировать код iframe</button>
+        </div>
+    </div>
+
+    <div id="game-area">
+        
+        <div id="score-board">
+            <div id="score-p1">Аладдин: 0</div>
+            <div id="score-p2">Жасмин: 0</div>
+        </div>
+
+        <div id="status-text">Ход: Аладдин. Жми на лампу!</div>
+        
+        <div id="lamp-container" class="draggable-resizable">
+            <div id="lamp-visual" style="font-size: 80px; text-align: center; width: 100%; height: 100%; display:flex; justify-content:center; align-items:center;">🪔</div>
+            <div id="hand-visual" class="hand-img" style="font-size: 60px; line-height: 80px;">🖐️</div>
+        </div>
+
+        <div class="board draggable-resizable" id="board">
+            <div class="cell" data-idx="0"></div><div class="cell" data-idx="1"></div><div class="cell" data-idx="2"></div>
+            <div class="cell" data-idx="3"></div><div class="cell" data-idx="4"></div><div class="cell" data-idx="5"></div>
+            <div class="cell" data-idx="6"></div><div class="cell" data-idx="7"></div><div class="cell" data-idx="8"></div>
+            <div id="win-line"></div>
+        </div>
+
+        <div id="modal-overlay">
+            <div class="modal-box">
+                <div class="modal-question" id="modal-q-text">Вопрос?</div>
+                <div id="modal-answers-choice" style="display:none;">
+                    <button class="ans-btn">Ответ 1</button>
+                    <button class="ans-btn">Ответ 2</button>
+                    <button class="ans-btn">Ответ 3</button>
+                </div>
+                <div id="modal-answers-input" style="display:none;">
+                    <input type="text" id="ans-input" placeholder="Введи ответ...">
+                    <button id="submit-ans-btn">Ответить!</button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="win-overlay">
+            <div class="win-box">
+                <div class="win-title" id="win-msg">АЛАДДИН ПОБЕДИЛ!</div>
+                
+                <div id="win-img-wrapper" class="draggable-resizable" style="display: none;">
+                    <img id="win-img-visual" src="" style="display:none;">
+                </div>
+
+                <button class="win-btn" id="play-again-btn">СЛЕДУЮЩИЙ РАУНД!</button>
+                <button class="win-btn" id="close-preview-btn" style="display: none; background: #00e676; margin-top: 10px;">СОХРАНИТЬ И ЗАКРЫТЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const els = {
+            p1Name: document.getElementById('p1Name'), p1Icon: document.getElementById('p1IconUrl'),
+            p2Name: document.getElementById('p2Name'), p2Icon: document.getElementById('p2IconUrl'),
+            lampUrl: document.getElementById('lampUrl'), lampFile: document.getElementById('lampUploadFile'),
+            handUrl: document.getElementById('handUrl'), handFile: document.getElementById('handUploadFile'),
+            bgUrl: document.getElementById('bgUrl'), bgFile: document.getElementById('bgUploadFile'),
+            winUrl: document.getElementById('winImgUrl'), winFile: document.getElementById('winImgUpload'),
+            winAnim: document.getElementById('winAnimStyle'),
+            qMode: document.getElementById('questionMode'), 
+            qDb: document.getElementById('questionsDb'), aDb: document.getElementById('answersDb'),
+            lampVis: document.getElementById('lamp-visual'), handVis: document.getElementById('hand-visual'), 
+            gameArea: document.getElementById('game-area'), winImgVisual: document.getElementById('win-img-visual'),
+            winImgWrapper: document.getElementById('win-img-wrapper')
+        };
+
+        // --- ЛОГИКА ШРИФТОВ И ЦВЕТА ---
+        function updateGameStyles() {
+            const font = document.getElementById('gameFontSelect').value;
+            const color = document.getElementById('gameTextColor').value;
+            
+            const elementsWithFont = [
+                document.getElementById('score-board'),
+                document.getElementById('status-text'),
+                document.getElementById('modal-q-text'),
+                document.getElementById('win-msg'),
+                ...document.querySelectorAll('.ans-btn'),
+                ...document.querySelectorAll('.win-btn'),
+                ...document.querySelectorAll('.cell')
+            ];
+            
+            elementsWithFont.forEach(el => { if (el) el.style.fontFamily = font; });
+            
+            document.getElementById('status-text').style.color = color;
+            document.getElementById('status-text').style.textShadow = `2px 2px 0px #000, 0 0 15px ${color}`;
+            
+            document.getElementById('modal-q-text').style.color = color;
+            
+            document.querySelectorAll('.ans-btn').forEach(btn => {
+                btn.style.color = color;
+                btn.style.borderColor = color;
+            });
+        }
+
+        document.getElementById('gameFontSelect').addEventListener('change', updateGameStyles);
+        document.getElementById('gameTextColor').addEventListener('input', updateGameStyles);
+
+
+        // --- СИСТЕМА СОХРАНЕНИЯ ПРЕСЕТОВ ---
+        const PRESETS_KEY = 'TicTacToePresets';
+        const presetNameInput = document.getElementById('presetName');
+        const presetSelect = document.getElementById('presetSelect');
+        
+        function getPresets() {
+            const saved = localStorage.getItem(PRESETS_KEY);
+            return saved ? JSON.parse(saved) : {};
+        }
+        function savePresets(presets) { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); }
+
+        function updatePresetDropdown() {
+            const presets = getPresets();
+            presetSelect.innerHTML = '<option value="">-- Выбери пресет --</option>';
+            for (let name in presets) {
+                const opt = document.createElement('option');
+                opt.value = name; opt.textContent = name;
+                presetSelect.appendChild(opt);
+            }
+        }
+
+        document.getElementById('savePresetBtn').addEventListener('click', () => {
+            const name = presetNameInput.value.trim();
+            if (!name) return alert('Введите название пресета!');
+            
+            const currentSettings = {
+                p1Name: els.p1Name.value, p1IconUrl: els.p1Icon.value,
+                p2Name: els.p2Name.value, p2IconUrl: els.p2Icon.value,
+                lampUrl: els.lampUrl.value, handUrl: els.handUrl.value,
+                bgUrl: els.bgUrl.value, winImgUrl: els.winUrl.value,
+                winAnimStyle: els.winAnim.value, questionMode: els.qMode.value,
+                questionsDb: els.qDb.value, answersDb: els.aDb.value,
+                gameFont: document.getElementById('gameFontSelect').value,
+                gameColor: document.getElementById('gameTextColor').value
+            };
+
+            const presets = getPresets();
+            presets[name] = currentSettings;
+            savePresets(presets);
+            presetNameInput.value = '';
+            updatePresetDropdown();
+            presetSelect.value = name;
+            alert(`Стиль "${name}" успешно сохранен!`);
+        });
+
+        document.getElementById('loadPresetBtn').addEventListener('click', () => {
+            const name = presetSelect.value;
+            if (!name) return alert('Выберите пресет из списка!');
+            
+            const presets = getPresets();
+            const settings = presets[name];
+            if (!settings) return;
+
+            els.p1Name.value = settings.p1Name || ''; els.p1Icon.value = settings.p1IconUrl || '';
+            els.p2Name.value = settings.p2Name || ''; els.p2Icon.value = settings.p2IconUrl || '';
+            els.lampUrl.value = settings.lampUrl || ''; els.handUrl.value = settings.handUrl || '';
+            els.bgUrl.value = settings.bgUrl || ''; els.winUrl.value = settings.winImgUrl || '';
+            els.winAnim.value = settings.winAnimStyle || 'none'; els.qMode.value = settings.questionMode || 'choice';
+            els.qDb.value = settings.questionsDb || ''; els.aDb.value = settings.answersDb || '';
+            
+            document.getElementById('gameFontSelect').value = settings.gameFont || "'Comfortaa', sans-serif";
+            document.getElementById('gameTextColor').value = settings.gameColor || "#f9a826";
+
+            updateVisuals();
+            updateGameStyles();
+        });
+
+        document.getElementById('delPresetBtn').addEventListener('click', () => {
+            const name = presetSelect.value;
+            if (!name) return alert('Выберите пресет для удаления!');
+            if (!confirm(`Точно удалить стиль "${name}"?`)) return;
+            const presets = getPresets();
+            delete presets[name];
+            savePresets(presets);
+            updatePresetDropdown();
+        });
+        updatePresetDropdown();
+        // -------------------------------------
+
+        let boardState = ["", "", "", "", "", "", "", "", ""];
+        let currentPlayer = 1; 
+        let gameActive = true;
+        let lampUnlocked = true; 
+        let boardUnlocked = false; 
+        let currentRightAnswer = "";
+        
+        let p1Wins = 0; let p2Wins = 0;
+        let lampImageSrc = ""; let handImageSrc = ""; let winImageSrc = "";
+        let wasDragged = false; 
+
+        const statusText = document.getElementById('status-text');
+        const scoreP1 = document.getElementById('score-p1');
+        const scoreP2 = document.getElementById('score-p2');
+        const lampContainer = document.getElementById('lamp-container');
+        const handVisual = document.getElementById('hand-visual');
+        const board = document.getElementById('board');
+        const cells = document.querySelectorAll('.cell');
+        const winLine = document.getElementById('win-line');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalQText = document.getElementById('modal-q-text');
+        const blockChoice = document.getElementById('modal-answers-choice');
+        const blockInput = document.getElementById('modal-answers-input');
+        const ansBtns = document.querySelectorAll('.ans-btn');
+        const ansInput = document.getElementById('ans-input');
+        const ansSubmit = document.getElementById('submit-ans-btn');
+        const winOverlay = document.getElementById('win-overlay');
+        const winMsg = document.getElementById('win-msg');
+
+        const winConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], 
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], 
+            [0, 4, 8], [2, 4, 6]             
+        ];
+
+        // --- ЛОГИКА ПЕРЕТАСКИВАНИЯ (Drag & Drop) ---
+        function enableDrag(element) {
+            let isDragging = false;
+            let startX, startY;
+            let initialX = 0, initialY = 0;
+            let xOffset = 0, yOffset = 0;
+
+            element.addEventListener("mousedown", (e) => {
+                const rect = element.getBoundingClientRect();
+                if (e.clientX > rect.right - 20 && e.clientY > rect.bottom - 20) return;
+                
+                isDragging = true; wasDragged = false; 
+                startX = e.clientX; startY = e.clientY;
+                initialX = xOffset; initialY = yOffset;
+                element.style.zIndex = 30; 
+            });
+
+            window.addEventListener("mousemove", (e) => {
+                if (isDragging) {
+                    const dx = e.clientX - startX; const dy = e.clientY - startY;
+                    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) wasDragged = true;
+                    
+                    xOffset = initialX + dx; yOffset = initialY + dy;
+                    element.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+                }
+            });
+
+            window.addEventListener("mouseup", () => {
+                if (isDragging) {
+                    isDragging = false; element.style.zIndex = 10;
+                    setTimeout(() => wasDragged = false, 0); 
+                }
+            });
+        }
+
+        enableDrag(lampContainer);
+        enableDrag(board);
+        enableDrag(els.winImgWrapper);
+        // ------------------------------------------
+
+        els.bgFile.addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                els.bgUrl.value = '';
+                const reader = new FileReader();
+                reader.onload = (event) => { els.gameArea.style.backgroundImage = `url('${event.target.result}')`; }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        els.winFile.addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                els.winUrl.value = '';
+                const reader = new FileReader();
+                reader.onload = (event) => { winImageSrc = event.target.result; updateWinImage(); }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        els.lampFile.addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                els.lampUrl.value = '';
+                const reader = new FileReader();
+                reader.onload = (event) => { lampImageSrc = event.target.result; updateVisuals(); }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        els.handFile.addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                els.handUrl.value = '';
+                const reader = new FileReader();
+                reader.onload = (event) => { handImageSrc = event.target.result; updateVisuals(); }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        function updateVisuals() {
+            if (els.bgUrl.value.trim()) els.gameArea.style.backgroundImage = `url('${els.bgUrl.value.trim()}')`;
+            else if (!els.bgFile.value) els.gameArea.style.backgroundImage = `radial-gradient(circle, #241b4d 0%, #0f0c29 100%)`;
+
+            if (els.lampUrl.value.trim()) lampImageSrc = els.lampUrl.value.trim();
+            if (lampImageSrc) els.lampVis.innerHTML = `<img src="${lampImageSrc}" class="lamp-img" style="width:100%;height:100%;pointer-events:none;">`;
+            else els.lampVis.innerHTML = '🪔';
+
+            if (els.handUrl.value.trim()) handImageSrc = els.handUrl.value.trim();
+            if (handImageSrc) els.handVis.innerHTML = `<img src="${handImageSrc}" style="width:100%;height:100%;object-fit:contain;pointer-events:none;">`;
+            else els.handVis.innerHTML = '🖐️';
+
+            scoreP1.innerText = `${els.p1Name.value}: ${p1Wins}`;
+            scoreP2.innerText = `${els.p2Name.value}: ${p2Wins}`;
+
+            if (els.winUrl.value.trim()) winImageSrc = els.winUrl.value.trim();
+            updateWinImage();
+        }
+
+        function updateWinImage() {
+            if (winImageSrc) {
+                els.winImgVisual.src = winImageSrc;
+                els.winImgVisual.style.display = 'block';
+                els.winImgWrapper.style.display = 'block';
+                els.winImgVisual.className = '';
+                if (els.winAnim.value !== 'none') els.winImgVisual.classList.add(els.winAnim.value);
+            } else {
+                els.winImgVisual.style.display = 'none';
+                els.winImgWrapper.style.display = 'none';
+            }
+        }
+
+        ['p1Name', 'p2Name', 'lampUrl', 'handUrl', 'bgUrl', 'winImgUrl', 'winAnimStyle'].forEach(id => {
+            document.getElementById(id).addEventListener('input', () => {
+                updateVisuals();
+                if(gameActive) updateStatus(lampUnlocked ? 'rub' : 'place');
+            });
+        });
+
+        // ПРЕДПРОСМОТР ПОБЕДЫ (Исправлено)
+        document.getElementById('previewWinBtn').addEventListener('click', () => {
+            winMsg.innerText = `ПРЕДПРОСМОТР ПОБЕДЫ!`;
+            winMsg.style.color = '#00e676'; 
+            winMsg.style.textShadow = `0 0 20px #00e676`;
+            updateWinImage(); 
+            
+            // Прячем кнопку "Следующий раунд" и показываем кнопку закрытия
+            document.getElementById('play-again-btn').style.display = 'none';
+            document.getElementById('close-preview-btn').style.display = 'block';
+            
+            winOverlay.style.display = 'flex'; 
+            // Убрали setTimeout, теперь оно не исчезнет само!
+        });
+
+        // Кнопка закрытия предпросмотра
+        document.getElementById('close-preview-btn').addEventListener('click', () => {
+            winOverlay.style.display = 'none';
+            // Возвращаем как было, чтобы настоящая победа работала правильно
+            document.getElementById('play-again-btn').style.display = 'block';
+            document.getElementById('close-preview-btn').style.display = 'none';
+        });
+
+        function getPlayerIcon(playerNum) {
+            const url = playerNum === 1 ? els.p1Icon.value.trim() : els.p2Icon.value.trim();
+            if (url) return `<img src="${url}" style="width:80%;height:80%;object-fit:contain;pointer-events:none;">`;
+            return playerNum === 1 ? '🧞‍♂️' : '👸'; 
+        }
+        function getPlayerName(playerNum) { return playerNum === 1 ? els.p1Name.value : els.p2Name.value; }
+
+        function updateStatus(state) {
+            const name = getPlayerName(currentPlayer);
+            const color = currentPlayer === 1 ? '#00e676' : '#ff4081'; 
+            
+            scoreP1.style.transform = currentPlayer === 1 ? 'scale(1.2)' : 'scale(1)';
+            scoreP1.style.opacity = currentPlayer === 1 ? '1' : '0.5';
+            scoreP2.style.transform = currentPlayer === 2 ? 'scale(1.2)' : 'scale(1)';
+            scoreP2.style.opacity = currentPlayer === 2 ? '1' : '0.5';
+
+            if (state === 'rub') statusText.innerHTML = `Ход: <span style="color:${color}">${name}</span>. Нажми на лампу!`;
+            if (state === 'place') statusText.innerHTML = `Молодец! <span style="color:${color}">${name}</span>, ставь фигурку!`;
+            
+            // Переприменяем стили шрифта и цвета, так как innerHTML перезаписывается
+            updateGameStyles();
+        }
+
+        function getRandomQuestion() {
+            const qLines = els.qDb.value.split('\n');
+            const aLines = els.aDb.value.split('\n');
+            
+            let validIndices = [];
+            for (let i = 0; i < qLines.length; i++) {
+                if (qLines[i].trim().length > 0) validIndices.push(i);
+            }
+            
+            if (validIndices.length === 0) return null;
+            
+            const randomIdx = validIndices[Math.floor(Math.random() * validIndices.length)];
+            const qText = qLines[randomIdx];
+            const aText = aLines[randomIdx] || "";
+            
+            const parts = aText.split('|').map(p => p.trim());
+            
+            let right = "Да";
+            let w1 = "Нет";
+            let w2 = "Не знаю";
+            
+            let rightIndex = parts.findIndex(p => p.endsWith('*') || p.includes('*'));
+            
+            if (rightIndex !== -1) {
+                right = parts[rightIndex].replace('*', '').trim();
+                let wrongParts = parts.filter((_, idx) => idx !== rightIndex).map(p => p.replace('*', '').trim());
+                w1 = wrongParts[0] || "Нет";
+                w2 = wrongParts[1] || "Не знаю";
+            } else {
+                right = (parts[0] || "Да").replace('*', '').trim();
+                w1 = (parts[1] || "Нет").replace('*', '').trim();
+                w2 = (parts[2] || "Не знаю").replace('*', '').trim();
+            }
+
+            return { q: qText || "Нет вопроса?", right: right, w1: w1, w2: w2 };
+        }
+
+        lampContainer.addEventListener('click', (e) => {
+            if (wasDragged) return; 
+            if (!gameActive || !lampUnlocked) return;
+            
+            lampUnlocked = false; 
+            handVisual.classList.add('is-rubbing');
+            setTimeout(() => { handVisual.classList.remove('is-rubbing'); showQuestion(); }, 1500);
+        });
+
+        function showQuestion() {
+            const qData = getRandomQuestion();
+            if (!qData) { unlockBoard(); return; } 
+            
+            currentRightAnswer = qData.right.toLowerCase().trim();
+            modalQText.innerText = qData.q;
+            
+            if (els.qMode.value === 'choice') {
+                blockChoice.style.display = 'block'; blockInput.style.display = 'none';
+                let options = [qData.right, qData.w1, qData.w2].sort(() => Math.random() - 0.5);
+                ansBtns.forEach((btn, idx) => { btn.innerText = options[idx]; btn.onclick = () => checkAnswer(options[idx]); });
+            } else {
+                blockChoice.style.display = 'none'; blockInput.style.display = 'block';
+                ansInput.value = ''; ansSubmit.onclick = () => checkAnswer(ansInput.value);
+            }
+            modalOverlay.style.display = 'flex';
+        }
+
+        function checkAnswer(userAns) {
+            const cleanAns = userAns.toLowerCase().trim();
+            modalOverlay.style.display = 'none';
+            if (cleanAns === currentRightAnswer) unlockBoard();
+            else { alert(`Упс! Правильный ответ был: ${currentRightAnswer}`); switchPlayer(); }
+        }
+
+        function unlockBoard() {
+            boardUnlocked = true;
+            cells.forEach(c => { if(c.innerHTML === "") c.style.cursor = "pointer"; });
+            updateStatus('place');
+        }
+
+        cells.forEach(cell => {
+            cell.addEventListener('click', (e) => {
+                if (wasDragged) return; 
+                const idx = cell.getAttribute('data-idx');
+                if (boardState[idx] !== "" || !gameActive || !boardUnlocked) return;
+                boardState[idx] = currentPlayer;
+                cell.innerHTML = getPlayerIcon(currentPlayer);
+                cell.classList.add('disabled');
+                checkWin();
+            });
+        });
+
+        function checkWin() {
+            let roundWon = false;
+            let winCombo = [];
+
+            for (let i = 0; i < winConditions.length; i++) {
+                const [a, b, c] = winConditions[i];
+                if (boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c]) {
+                    roundWon = true; winCombo = [a, c]; break;
+                }
+            }
+
+            if (roundWon) {
+                gameActive = false;
+                if (currentPlayer === 1) p1Wins++; else p2Wins++;
+                updateVisuals();
+
+                drawWinLine(winCombo[0], winCombo[1]);
+                setTimeout(() => {
+                    winMsg.innerText = `${getPlayerName(currentPlayer).toUpperCase()} ПОБЕЖДАЕТ!`;
+                    winMsg.style.color = currentPlayer === 1 ? '#00e676' : '#ff4081';
+                    winMsg.style.textShadow = `0 0 20px ${currentPlayer === 1 ? '#00e676' : '#ff4081'}`;
+                    
+                    document.getElementById('play-again-btn').style.display = 'block';
+                    document.getElementById('close-preview-btn').style.display = 'none';
+                    
+                    winOverlay.style.display = 'flex';
+                    updateWinImage(); 
+                }, 800);
+                return;
+            }
+
+            if (!boardState.includes("")) {
+                gameActive = false;
+                setTimeout(() => {
+                    winMsg.innerText = `НИЧЬЯ!`;
+                    winMsg.style.color = '#f9a826'; 
+                    winMsg.style.textShadow = '0 0 20px #f9a826';
+                    
+                    document.getElementById('play-again-btn').style.display = 'block';
+                    document.getElementById('close-preview-btn').style.display = 'none';
+                    
+                    winOverlay.style.display = 'flex';
+                }, 800);
+                return;
+            }
+
+            switchPlayer();
+        }
+
+        function switchPlayer() {
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            lampUnlocked = true; boardUnlocked = false;
+            cells.forEach(c => c.style.cursor = "not-allowed");
+            updateStatus('rub');
+        }
+
+        function drawWinLine(startIdx, endIdx) {
+            const startCell = cells[startIdx].getBoundingClientRect();
+            const endCell = cells[endIdx].getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+
+            const x1 = startCell.left + startCell.width/2 - boardRect.left;
+            const y1 = startCell.top + startCell.height/2 - boardRect.top;
+            const x2 = endCell.left + endCell.width/2 - boardRect.left;
+            const y2 = endCell.top + endCell.height/2 - boardRect.top;
+
+            const length = Math.sqrt((x2 - x1)**2 + (y2 - y1)**2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+
+            winLine.style.width = `${length}px`;
+            winLine.style.height = '10px';
+            winLine.style.left = `${x1}px`;
+            winLine.style.top = `${y1 - 5}px`;
+            winLine.style.transform = `rotate(${angle}deg)`;
+            winLine.style.display = 'block';
+            winLine.style.animation = 'popIn 0.3s ease-out';
+        }
+
+        function restartGame() {
+            boardState = ["", "", "", "", "", "", "", "", ""];
+            gameActive = true; currentPlayer = 1; lampUnlocked = true; boardUnlocked = false;
+            winLine.style.display = 'none'; winOverlay.style.display = 'none';
+            cells.forEach(c => { c.innerHTML = ""; c.classList.remove('disabled'); c.style.cursor = "not-allowed"; });
+            updateStatus('rub'); updateVisuals();
+        }
+
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('play-again-btn').addEventListener('click', () => { winOverlay.style.display = 'none'; restartGame(); });
+        document.getElementById('resetScoreBtn').addEventListener('click', () => { p1Wins = 0; p2Wins = 0; updateVisuals(); });
+
+        // --- КОПИРОВАНИЕ IFRAME ---
+        document.getElementById('copyIframeBtn').addEventListener('click', () => {
+            const iframeCode = `<iframe src="${window.location.href}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
+            navigator.clipboard.writeText(iframeCode).then(() => {
+                alert('Код скопирован!\nВставляй в Genially (Insert -> Other):\n\n' + iframeCode);
+            }).catch(err => {
+                prompt('Не удалось скопировать автоматически. Скопируй этот код вручную:', iframeCode);
+            });
+        });
+
+        // Инициализируем стили при самом первом запуске
+        updateGameStyles();
+        restartGame();
+
+    </script>
+</body>
+</html>
