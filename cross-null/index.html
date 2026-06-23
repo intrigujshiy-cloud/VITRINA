@@ -3,11 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Magic Tic-Tac-Toe Constructor v2.3</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+    <script>
+        window.MathJax = {
+            tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js" async></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Orbitron:wght@700&family=Bangers&family=Caveat:wght@700&family=Pacifico&family=Amatic+SC:wght@700&family=Russo+One&family=Lobster&family=Press+Start+2P&family=Oswald:wght@700&family=Montserrat:wght@800&family=Nunito:wght@800&family=Pangolin&family=Rubik+Mono+One&family=Seymour+One&family=Jura:wght@700&family=Marmelad&family=Kurale&display=swap" rel="stylesheet">
     
     <style>
         body { background: #0f0c29; color: #eee; font-family: 'Comfortaa', sans-serif; display: grid; grid-template-columns: 400px 1fr; gap: 0; margin: 0; padding: 0; height: 100vh; overflow: hidden; }
         
+        /* РЕЖИМ УЧЕНИКА: Скрываем панель и растягиваем игру */
+        body.student-mode { grid-template-columns: 1fr; }
+        body.student-mode .panel { display: none !important; }
+
         /* Панель настроек */
         .panel { background: #1a163a; padding: 20px; border-right: 2px solid #f9a826; height: 100vh; overflow-y: auto; box-sizing: border-box; box-shadow: 5px 0 30px rgba(0,0,0,0.8); }
         .panel::-webkit-scrollbar { width: 8px; }
@@ -18,7 +31,6 @@
         .group-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         label { font-size: 11px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;}
         input[type="text"], select, textarea { background: #2a2456; border: 1px solid #4a3f85; color: white; padding: 8px; border-radius: 6px; font-size: 13px; width: 100%; box-sizing: border-box; font-family: 'Comfortaa';}
-        input[type="file"] { font-size: 11px; color: #aaa; background: #2a2456; border: 1px solid #4a3f85; padding: 4px; border-radius: 4px; width: 100%; box-sizing: border-box;}
         textarea { resize: vertical; min-height: 80px; white-space: pre-wrap; font-family: monospace; font-size: 12px; overflow-x: hidden; }
         
         .btn-mini { background: #f9a826; color: #1a163a; border: none; border-radius: 4px; padding: 8px; font-size: 12px; cursor: pointer; font-weight: bold; transition: 0.2s; width: 100%; }
@@ -82,14 +94,12 @@
         .win-box { text-align: center; animation: popIn 0.5s ease-out; display: flex; flex-direction: column; align-items: center;}
         .win-title { font-family: 'Bangers', cursive; font-size: 60px; color: #00e676; text-shadow: 0 0 20px #00e676; margin-bottom: 20px;}
         
-        /* ДОБАВЛЕН PADDING ЧТОБЫ АНИМАЦИЯ НЕ ОБРЕЗАЛАСЬ */
         #win-img-wrapper { position: relative; width: 300px; height: 300px; margin-bottom: 20px; display: none; padding: 50px; box-sizing: border-box; }
         #win-img-visual { width: 100%; height: 100%; object-fit: contain; }
 
         .win-btn { font-size: 24px; font-family: 'Bangers'; padding: 10px 40px; background: #f9a826; border: none; border-radius: 10px; cursor: pointer; transition: 0.2s; }
         .win-btn:hover { transform: scale(1.1); }
 
-        /* 10 АНИМАЦИЙ ДЛЯ ПОБЕДНОЙ КАРТИНКИ */
         @keyframes anim-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-40px); } }
         @keyframes anim-wave { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(5deg); } }
         @keyframes anim-float { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(15px, -20px); } }
@@ -111,6 +121,30 @@
         .anim-elastic { animation: anim-elastic 1s infinite ease-in-out; }
         .anim-jump { animation: anim-jump 1.5s infinite ease-in-out; }
         .anim-flicker { animation: anim-flicker 0.2s infinite linear; }
+
+        /* --- СТИЛИ ДЛЯ ПАНЕЛИ LATEX --- */
+        .latex-panel-container { margin-top: 15px; background: rgba(0,0,0,0.3); border: 1px solid #4a3f85; padding: 10px; border-radius: 6px; }
+        .latex-toolbar { display: none; margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+        .toolbar-category { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: rgba(0,0,0,0.4); padding: 8px; border-radius: 6px; border-left: 3px solid #f9a826; }
+        .toolbar-category.phys { border-left-color: #00bcd4; }
+        .toolbar-category.chem { border-left-color: #f44336; }
+        .toolbar-category span { font-size: 11px; font-weight: bold; width: 80px; }
+        .latex-btn { background: #2a2456; color: #fff; border: 1px solid #4a3f85; padding: 5px; font-size: 11px; font-family: monospace; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .latex-btn:hover { background: #f9a826; color: #000; }
+        .latex-preview-box { display: none; margin-top: 10px; min-height: 40px; padding: 10px; background: rgba(255, 255, 255, 0.9); border: 2px dashed #f9a826; border-radius: 6px; color: #000; font-size: 14px; font-family: sans-serif; text-align: center; overflow-x: auto;}
+        
+        .latex-help-btn { background: #f9a826; color: #1a163a; border: none; padding: 4px 10px; font-size: 11px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-left: auto; transition: 0.2s;}
+        .latex-help-btn:hover { background: #ffbe5c; }
+        
+        /* Окно шпаргалки LaTeX */
+        .latex-help-modal { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 999999; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .latex-help-content { background: #1a163a; color: #eee; width: 90%; max-width: 600px; max-height: 85vh; padding: 25px; border-radius: 12px; border-top: 6px solid #f9a826; box-shadow: 0 10px 30px rgba(0,0,0,0.8); overflow-y: auto; position: relative; font-family: 'Comfortaa', sans-serif; }
+        .latex-help-content h3 { color: #f9a826; margin-top: 0; border-bottom: 1px dashed #4a3f85; padding-bottom: 8px; font-size: 20px; font-family: 'Bangers', cursive; letter-spacing: 1px;}
+        .latex-help-content h4 { color: #00e676; margin-bottom: 5px; margin-top: 15px; font-size: 14px; border-bottom: 1px dashed #4a3f85; padding-bottom: 3px; }
+        .latex-help-content p, .latex-help-content li { font-size: 12px; line-height: 1.5; color: #ccc; }
+        .latex-help-content code { background: #2a2456; color: #f9a826; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; font-weight: bold; }
+        .latex-help-close { position: absolute; top: 15px; right: 15px; background: #ff4081; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-weight: bold; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        .latex-help-close:hover { background: #f50057; }
     </style>
 </head>
 <body>
@@ -145,11 +179,9 @@
 
         <div class="section-title">Волшебная Лампа</div>
         <div class="group">
-            <label>Лампа (URL)</label>
             <input type="text" id="lampUrl" value="https://media.tenor.com/tnN60m3qtNAAAAAi/magic-lamp.gif" placeholder="URL картинки Лампы">
         </div>
         <div class="group">
-            <label>Рука (URL)</label>
             <input type="text" id="handUrl" placeholder="URL картинки Руки">
         </div>
         
@@ -214,7 +246,60 @@
         </div>
 
         <div class="section-title">Настройки вопросов</div>
-        <div class="group">
+        
+        <div class="latex-panel-container">
+            <div style="display: flex; align-items: center; width: 100%;">
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #f9a826; cursor: pointer; margin: 0;">
+                    <input type="checkbox" id="use-latex" onchange="toggleLatexToolbar()" style="width: 16px; height: 16px; accent-color: #f9a826; cursor: pointer; margin: 0;"> 
+                    <span id="label-latex">ВКЛЮЧИТЬ LATEX (ФОРМУЛЫ)</span>
+                </label>
+                <button type="button" class="latex-help-btn" onclick="openLatexHelp()">❓ ШПАРГАЛКА</button>
+            </div>
+
+            <div id="latex-toolbar-wrapper" class="latex-toolbar">
+                <div class="toolbar-category">
+                    <span style="color: #f9a826;">🔢 Матем:</span>
+                    <button class="latex-btn" onclick="insertFormula('\\frac{}{}', 6)" title="Дробь">½ Дробь</button>
+                    <button class="latex-btn" onclick="insertFormula('\\sqrt{}', 6)" title="Корень">√ Корень</button>
+                    <button class="latex-btn" onclick="insertFormula('^{}', 2)" title="Степень">x² Степень</button>
+                    <button class="latex-btn" onclick="insertFormula('_{}', 2)" title="Нижний индекс">x₂ Индекс</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\pi')" title="Пи">π</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\infty')" title="Бесконечность">∞</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\pm')" title="Плюс-минус">±</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\neq')" title="Не равно">≠</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\approx')" title="Примерно">≈</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\le')" title="Меньше или равно">≤</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\ge')" title="Больше или равно">≥</button>
+                </div>
+                
+                <div class="toolbar-category phys">
+                    <span style="color: #00bcd4;">🧲 Физика:</span>
+                    <button class="latex-btn" onclick="insertFormula('\\vec{}', 5)" title="Вектор">v⃗ Вектор</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\Delta')" title="Дельта">Δ</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\Omega')" title="Ом">Ω</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\mu')" title="Мю (Микро)">μ</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\rho')" title="Плотность">ρ</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\lambda')" title="Длина волны">λ</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\alpha')" title="Альфа">α</button>
+                    <button class="latex-btn" onclick="insertSymbol('^\\circ')" title="Градус угла">° Угол</button>
+                    <button class="latex-btn" onclick="insertFormula('\\cdot', 0)" title="Умножение (точка)">• Умнож.</button>
+                </div>
+
+                <div class="toolbar-category chem">
+                    <span style="color: #f44336;">🧪 Химия:</span>
+                    <button class="latex-btn" onclick="insertSymbol('\\rightarrow')" title="Реакция (вправо)">→</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\rightleftharpoons')" title="Обратимая реакция">⇌</button>
+                    <button class="latex-btn" onclick="insertFormula('_{}^{}\\text{}', 11)" title="Изотоп">Изотоп</button>
+                    <button class="latex-btn" onclick="insertSymbol('^\\circ\\text{C}')" title="Градусы Цельсия">°C</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\uparrow')" title="Газ (стрелка вверх)">↑ Газ</button>
+                    <button class="latex-btn" onclick="insertSymbol('\\downarrow')" title="Осадок (стрелка вниз)">↓ Осадок</button>
+                    <button class="latex-btn" onclick="insertFormula('\\text{}', 6)" title="Обычный текст внутри формулы">Текст</button>
+                </div>
+            </div>
+
+            <div id="latex-preview-box" class="latex-preview-box">Здесь появится предпросмотр...</div>
+        </div>
+        <div class="group" style="margin-top: 10px;">
             <label>Формат ответа:</label>
             <select id="questionMode">
                 <option value="choice" selected>Выбор из 3 вариантов</option>
@@ -228,7 +313,7 @@
                 <div style="flex: 1;"><label style="font-size: 12px; color: white;">ОТВЕТЫ</label></div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <textarea id="questionsDb" style="flex: 1; min-height: 120px;" placeholder="Вопрос 1&#10;Вопрос 2">He ___ to school every day.
+                <textarea id="questionsDb" oninput="updatePreview()" style="flex: 1; min-height: 120px;" placeholder="Вопрос 1&#10;Вопрос 2">He ___ to school every day.
 She ___ a book right now.
 ___ you like apples?
 They ___ play tennis.
@@ -301,6 +386,30 @@ is stealing*|steals|steal</textarea>
                 <button class="win-btn" id="play-again-btn">СЛЕДУЮЩИЙ РАУНД!</button>
                 <button class="win-btn" id="close-preview-btn" style="display: none; background: #00e676; margin-top: 10px;">СОХРАНИТЬ И ЗАКРЫТЬ</button>
             </div>
+        </div>
+    </div>
+
+    <div id="latex-help-modal" class="latex-help-modal" onclick="closeLatexHelp()">
+        <div class="latex-help-content" onclick="event.stopPropagation()">
+            <button type="button" class="latex-help-close" onclick="closeLatexHelp()">✖</button>
+            <h3>🎓 Как управлять формулами за 2 минуты</h3>
+            <p>Вся магия красивых формул строится на двух простых правилах:</p>
+            <ul>
+                <li><b>Знаки доллара (<code>$</code>)</b> — показывают компьютеру, где начинается и заканчивается формула. Кнопки ставят их сами!</li>
+                <li><b>Фигурные скобки (<code>{}</code>)</b> — это невидимые «кармашки» для чисел и букв. Пишите свои данные строго внутрь них.</li>
+            </ul>
+            
+            <h4>Пример 1: Многоэтажная дробь (Математика)</h4>
+            <p>Нажмите кнопку <b>½ Дробь</b>. Появится код <code>$\frac{}{}$</code>. В первые скобки пишем верх, во вторые — низ. Например: <code>$\frac{5}{8}$</code> превратится в $\frac{5}{8}$.</p>
+            
+            <h4>Пример 2: Скорость с вектором (Физика)</h4>
+            <p>Нажмите кнопку <b>v⃗ Вектор</b>. Появится код <code>$\vec{}$</code>. Впишите букву скорости <code>v</code> внутрь скобок. Чтобы поставить красивую точку умножения, нажмите кнопку <b>• Умнож.</b>. Код <code>$\vec{v} \cdot t$</code> превратится в $\vec{v} \cdot t$.</p>
+            
+            <h4>Пример 3: Нижние индексы (Химия)</h4>
+            <p>Пишем формулу воды: пишем обычную букву <code>H</code>, затем нажимаем кнопку <b>x₂ Индекс</b>, внутри появившихся скобок пишем <code>2</code>, а сразу за скобками дописываем букву <code>O</code>. Код <code>H$_{2}$O</code> превратится в H$_{2}$O.</p>
+            
+            <h4>Пример 4: Обычный текст внутри формул</h4>
+            <p>Внутри знаков долларов пробелы не работают. Чтобы написать обычное слово (например, условие над стрелочкой реакции), нажмите кнопку <b>Текст</b> и пишите внутри скобок: <code>$\xrightarrow{\text{нагревание}}$</code> превратится в $\xrightarrow{\text{нагревание}}$.</p>
         </div>
     </div>
 
@@ -385,7 +494,8 @@ is stealing*|steals|steal</textarea>
                 winAnimStyle: els.winAnim.value, questionMode: els.qMode.value,
                 questionsDb: els.qDb.value, answersDb: els.aDb.value,
                 gameFont: document.getElementById('gameFontSelect').value,
-                gameColor: document.getElementById('gameTextColor').value
+                gameColor: document.getElementById('gameTextColor').value,
+                useLatex: document.getElementById('use-latex').checked
             };
 
             const presets = getPresets();
@@ -414,9 +524,11 @@ is stealing*|steals|steal</textarea>
             
             document.getElementById('gameFontSelect').value = settings.gameFont || "'Comfortaa', sans-serif";
             document.getElementById('gameTextColor').value = settings.gameColor || "#f9a826";
+            document.getElementById('use-latex').checked = settings.useLatex || false;
 
             updateVisuals();
             updateGameStyles();
+            toggleLatexToolbar();
         });
 
         document.getElementById('delPresetBtn').addEventListener('click', () => {
@@ -430,6 +542,67 @@ is stealing*|steals|steal</textarea>
         });
         updatePresetDropdown();
         // -------------------------------------
+
+        // --- ЛОГИКА ПАНЕЛИ LATEX ---
+        function toggleLatexToolbar() {
+            const isChecked = document.getElementById('use-latex').checked;
+            const wrapper = document.getElementById('latex-toolbar-wrapper');
+            const preview = document.getElementById('latex-preview-box');
+            if (wrapper) wrapper.style.display = isChecked ? 'flex' : 'none';
+            if (preview) preview.style.display = isChecked ? 'block' : 'none';
+            if (isChecked) updatePreview();
+        }
+
+        function insertFormula(formula, offset) {
+            const ta = document.getElementById('questionsDb');
+            const insert = "$" + formula + "$";
+            const start = ta.selectionStart;
+            ta.value = ta.value.substring(0, start) + insert + ta.value.substring(ta.selectionEnd);
+            ta.selectionStart = ta.selectionEnd = start + 1 + offset;
+            ta.focus();
+            updatePreview();
+        }
+
+        function insertSymbol(symbol) {
+            const ta = document.getElementById('questionsDb');
+            const insert = "$" + symbol + "$";
+            const start = ta.selectionStart;
+            ta.value = ta.value.substring(0, start) + insert + ta.value.substring(ta.selectionEnd);
+            ta.selectionStart = ta.selectionEnd = start + insert.length;
+            ta.focus();
+            updatePreview();
+        }
+
+        function updatePreview() {
+            const isChecked = document.getElementById('use-latex').checked;
+            const preview = document.getElementById('latex-preview-box');
+            if (!isChecked || !preview) return;
+            
+            let text = document.getElementById('questionsDb').value;
+            if (!text.trim()) {
+                preview.innerHTML = '<span style="color:#aaa;">Введите вопросы, чтобы увидеть предпросмотр...</span>';
+                return;
+            }
+            
+            preview.innerHTML = text.replace(/\n/g, '<br>');
+            if (window.MathJax) {
+                MathJax.typesetPromise([preview]).catch(err => console.log('MathJax err:', err));
+            }
+        }
+
+        function openLatexHelp() {
+            const modal = document.getElementById('latex-help-modal');
+            if (modal) {
+                modal.style.display = 'flex';
+                if (window.MathJax) MathJax.typesetPromise([modal]).catch(e => console.log(e));
+            }
+        }
+
+        function closeLatexHelp() {
+            const modal = document.getElementById('latex-help-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        // ------------------------------------------
 
         let boardState = ["", "", "", "", "", "", "", "", ""];
         let currentPlayer = 1; 
@@ -557,7 +730,6 @@ is stealing*|steals|steal</textarea>
             document.getElementById('close-preview-btn').style.display = 'block';
             
             winOverlay.style.display = 'flex'; 
-            // Убрали setTimeout, теперь оно не исчезнет само!
         });
 
         // Кнопка закрытия предпросмотра
@@ -642,7 +814,14 @@ is stealing*|steals|steal</textarea>
             if (!qData) { unlockBoard(); return; } 
             
             currentRightAnswer = qData.right.toLowerCase().trim();
-            modalQText.innerText = qData.q;
+            
+            // Используем innerHTML для поддержки LaTeX
+            modalQText.innerHTML = qData.q;
+            
+            // Рендер LaTeX если включено
+            if (document.getElementById('use-latex').checked && window.MathJax) {
+                MathJax.typesetPromise([modalQText]).catch(e => console.log(e));
+            }
             
             if (els.qMode.value === 'choice') {
                 blockChoice.style.display = 'block'; blockInput.style.display = 'none';
@@ -770,19 +949,71 @@ is stealing*|steals|steal</textarea>
         document.getElementById('play-again-btn').addEventListener('click', () => { winOverlay.style.display = 'none'; restartGame(); });
         document.getElementById('resetScoreBtn').addEventListener('click', () => { p1Wins = 0; p2Wins = 0; updateVisuals(); });
 
-        // --- КОПИРОВАНИЕ IFRAME ---
+        // --- ИНИЦИАЛИЗАЦИЯ И РЕЖИМ УЧЕНИКА (IFRAME) ---
+        function init() {
+            const params = new URLSearchParams(window.location.search);
+            const gameData = params.get('game');
+            
+            if (gameData) {
+                // Включаем режим ученика: прячем панель
+                document.body.classList.add('student-mode');
+                try {
+                    // Распаковываем настройки
+                    const state = JSON.parse(LZString.decompressFromEncodedURIComponent(gameData));
+                    
+                    els.p1Name.value = state.p1N || 'Аладдин'; els.p1Icon.value = state.p1I || '';
+                    els.p2Name.value = state.p2N || 'Жасмин'; els.p2Icon.value = state.p2I || '';
+                    els.lampUrl.value = state.lU || ''; els.handUrl.value = state.hU || '';
+                    els.bgUrl.value = state.bU || ''; els.winUrl.value = state.wU || '';
+                    els.winAnim.value = state.wA || 'none';
+                    els.qMode.value = state.qM || 'choice';
+                    els.qDb.value = state.qD || ''; els.aDb.value = state.aD || '';
+                    document.getElementById('gameFontSelect').value = state.gF || "'Comfortaa', sans-serif";
+                    document.getElementById('gameTextColor').value = state.gC || "#f9a826";
+                    document.getElementById('use-latex').checked = state.uL || false;
+                    
+                } catch(e) {
+                    console.error("Ошибка загрузки данных ученика", e);
+                }
+            }
+            
+            updateGameStyles();
+            toggleLatexToolbar();
+            restartGame();
+        }
+
+        // --- КОПИРОВАНИЕ IFRAME (Улучшенное с сохранением) ---
         document.getElementById('copyIframeBtn').addEventListener('click', () => {
-            const iframeCode = `<iframe src="${window.location.href}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
+            // Собираем все текущие настройки в объект
+            const gameState = {
+                p1N: els.p1Name.value, p1I: els.p1Icon.value,
+                p2N: els.p2Name.value, p2I: els.p2Icon.value,
+                lU: els.lampUrl.value, hU: els.handUrl.value,
+                bU: els.bgUrl.value, wU: els.winUrl.value, wA: els.winAnim.value,
+                gF: document.getElementById('gameFontSelect').value,
+                gC: document.getElementById('gameTextColor').value,
+                qM: els.qMode.value, qD: els.qDb.value, aD: els.aDb.value,
+                uL: document.getElementById('use-latex').checked
+            };
+            
+            // Сжимаем
+            const encodedState = LZString.compressToEncodedURIComponent(JSON.stringify(gameState));
+            
+            // Создаем ссылку (отрезаем старые параметры, если они были)
+            const cleanUrl = window.location.href.split('?')[0];
+            const studentUrl = cleanUrl + "?game=" + encodedState;
+            
+            const iframeCode = `<iframe src="${studentUrl}" width="100%" height="100%" frameborder="0" allowfullscreen></iframe>`;
+            
             navigator.clipboard.writeText(iframeCode).then(() => {
-                alert('Код скопирован!\nВставляй в Genially (Insert -> Other):\n\n' + iframeCode);
+                alert('Код скопирован!\\n\\nИгра запомнила твои картинки, настройки и вопросы. Вставляй код в Genially (Insert -> Other):\\n\\n' + iframeCode);
             }).catch(err => {
                 prompt('Не удалось скопировать автоматически. Скопируй этот код вручную:', iframeCode);
             });
         });
 
-        // Инициализируем стили при самом первом запуске
-        updateGameStyles();
-        restartGame();
+        // Запуск
+        init();
 
     </script>
 </body>
