@@ -17,7 +17,8 @@
         }
         
         #setup-screen { position: fixed; inset: 0; background: var(--cyber-bg); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .setup-panel { position: relative; background: var(--cyber-panel); padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); border: 1px solid var(--cyber-accent); width: 100%; max-width: 900px; display: flex; flex-direction: row; gap: 20px; height: 85vh; color: white; }
+        .setup-panel { position: relative; background: var(--cyber-panel); padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); border: 1px solid var(--cyber-accent); width: 100%; max-width: 900px; display: flex; flex-direction: row; gap: 20px; height: 85vh; color: white; transition: 0.3s; }
+        .setup-panel.drag-over { box-shadow: 0 0 50px rgba(255, 0, 85, 0.5) !important; border-color: #ff0055 !important; background: rgba(26, 26, 36, 0.95) !important; }
         .col-left { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; }
         .col-right { flex: 1; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; padding-left: 20px; }
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
@@ -107,7 +108,7 @@
             
             <div class="col-left"><h2 style="margin:0;color:var(--cyber-accent);letter-spacing:2px;">DATA ENTRY</h2><div class="grid-inputs"><div><label>English</label><textarea id="enList" placeholder="apple...">apple&#10;cat&#10;robot</textarea></div><div><label>Russian</label><textarea id="ruList" placeholder="яблоко...">яблоко&#10;кот&#10;робот</textarea></div><div><label>Images</label><textarea id="imgList" placeholder="Leave empty for auto!"></textarea></div></div><h2 style="margin:10px 0 0;color:var(--cyber-accent);letter-spacing:2px;">VISUAL STYLES</h2><div class="color-inputs"><div class="color-field"><label>Border</label><input type="color" id="colorBorder" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Card BG</label><input type="color" id="colorBg" value="#ffffff" oninput="uS()"></div><div class="color-field"><label>Neon</label><input type="color" id="colorNeon" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Buttons</label><input type="color" id="colorBtn" value="#4a90e2" oninput="uS()"></div></div>
             <div style="margin-top:10px">
-                <label>Background URL / File</label>
+                <label>Background URL / File (Drag & Drop)</label>
                 <input type="text" id="bgInput" placeholder="Ссылка на фон" oninput="uS()" style="padding:10px;background:#000;border:1px solid #333;color:white;border-radius:5px;width:96%; margin-bottom: 8px;">
                 <input type="file" id="bgFileInput" accept="image/*" onchange="loadLocalBg(event)" style="color:var(--cyber-accent); font-size:12px; width:96%;">
             </div>
@@ -150,6 +151,31 @@
                 document.getElementById('editorBrandImg').src = atob(_0xSec[0]);
                 document.getElementById('editorBrandLink').href = atob(_0xSec[1]); 
                 uS(); 
+            }
+
+            // Добавляем обработчики Drag & Drop для панели настроек
+            const dp = document.querySelector('.setup-panel');
+            if(dp) {
+                dp.addEventListener('dragover', e => { 
+                    e.preventDefault(); 
+                    dp.classList.add('drag-over'); 
+                });
+                dp.addEventListener('dragleave', e => { 
+                    e.preventDefault(); 
+                    dp.classList.remove('drag-over'); 
+                });
+                dp.addEventListener('drop', e => {
+                    e.preventDefault(); 
+                    dp.classList.remove('drag-over');
+                    if(e.dataTransfer.files && e.dataTransfer.files[0] && e.dataTransfer.files[0].type.startsWith('image/')) {
+                        const r = new FileReader();
+                        r.onload = evt => { 
+                            document.getElementById('bgInput').value = evt.target.result; 
+                            uS(); 
+                        };
+                        r.readAsDataURL(e.dataTransfer.files[0]);
+                    }
+                });
             }
         }
 
