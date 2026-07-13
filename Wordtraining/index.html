@@ -132,7 +132,7 @@
     <div id="game-screen">
         <div class="overlay">
             <div class="header">
-                <div id="moduleDisplay" style="position: absolute; left: 20px; font-weight: bold; color: var(--primary); font-size: 16px; text-transform: uppercase;"></div>
+                <div id="moduleDisplay" style="position: absolute; left: 20px; font-weight: bold; color: var(--primary); font-size: 24px; text-transform: uppercase; text-shadow: 0 0 10px var(--card-neon), 0 0 20px var(--card-neon);"></div>
                 <div class="dot" id="d1" onclick="goToLevel(1)"></div>
                 <div class="dot" id="d2" onclick="goToLevel(2)"></div>
                 <div class="dot" id="d3" onclick="goToLevel(3)"></div>
@@ -243,7 +243,7 @@
             const bu = document.getElementById('bgInput').value; if(bu) document.getElementById('game-screen').style.backgroundImage = `url(${bu})`;
             
             const modVal = document.getElementById('modInput').value;
-            if(modVal) { document.getElementById('moduleDisplay').innerText = "MOD: " + modVal; }
+            if(modVal) { document.getElementById('moduleDisplay').innerText = modVal; }
 
             setBrand();
             document.getElementById('setup-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; rL();
@@ -255,7 +255,7 @@
             const md = ps.get('md');
             if(md) {
                 document.getElementById('modInput').value = md;
-                document.getElementById('moduleDisplay').innerText = "MOD: " + md;
+                document.getElementById('moduleDisplay').innerText = md;
             }
 
             setBrand();
