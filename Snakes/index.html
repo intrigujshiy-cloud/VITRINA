@@ -577,21 +577,38 @@
         const msg = document.getElementById('loading-msg');
         if (!url) return;
         
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
-        
         msg.style.display = 'block';
         msg.innerText = "Загрузка...";
 
-        fetch(proxyUrl)
-            .then(res => {
-                if (!res.ok) throw new Error('Ошибка сети (Код ' + res.status + ')');
-                return res.text();
-            })
-            .then(text => {
-                if(text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
-                    throw new Error("Неверный формат данных. Проверьте ссылку (должна быть CSV).");
-                }
+        // Прямая ссылка и 3 железобетонные соломки
+        const targets = [
+            url,
+            'https://corsproxy.io/?' + encodeURIComponent(url),
+            'https://api.allorigins.win/raw?url=' + encodeURIComponent(url),
+            'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(url)
+        ];
 
+        async function tryFetch() {
+            let lastError = "";
+            for (let i = 0; i < targets.length; i++) {
+                try {
+                    let res = await fetch(targets[i]);
+                    if (!res.ok) throw new Error('Код ' + res.status);
+                    let text = await res.text();
+                    if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+                        throw new Error("Неверный формат");
+                    }
+                    return text; // Успех!
+                } catch (e) {
+                    lastError = e.message;
+                    console.warn(`Попытка ${i + 1} не удалась:`, e);
+                }
+            }
+            throw new Error("Все серверы недоступны. Ошибка: " + lastError);
+        }
+
+        tryFetch()
+            .then(text => {
                 const rows = text.split(/\r?\n/);
                 let qT = "", aT = "";
                 rows.forEach((row, idx) => {
@@ -779,20 +796,42 @@
                         finishTurn();
                     } else {
                         if (state.sheetUrl && (!state.tasks || state.tasks.length === 0)) {
-                            const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(state.sheetUrl);
-                            fetch(proxyUrl).then(res=>res.text()).then(text=>{ 
-                                const rows=text.split(/\r?\n/); let newTasks=[]; 
-                                rows.forEach((row, idx)=>{ 
-                                    if(!row.trim() || idx === 0)return; 
-                                    const pts=row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
-                                    if(pts&&pts.length>=1){ 
-                                        let q=pts[0].replace(/^"|"$/g,'').trim(), a=pts.length>1?pts[1].replace(/^"|"$/g,'').trim():''; 
+                            // Прямая ссылка и 3 железобетонные соломки для режима игры
+                            const targets = [
+                                state.sheetUrl,
+                                'https://corsproxy.io/?' + encodeURIComponent(state.sheetUrl),
+                                'https://api.allorigins.win/raw?url=' + encodeURIComponent(state.sheetUrl),
+                                'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(state.sheetUrl)
+                            ];
+                            
+                            async function tryFetchGame() {
+                                for (let i = 0; i < targets.length; i++) {
+                                    try {
+                                        let res = await fetch(targets[i]);
+                                        if (res.ok) {
+                                            let text = await res.text();
+                                            if (!text.trim().startsWith("<!DOCTYPE") && !text.includes("<html")) {
+                                                return text;
+                                            }
+                                        }
+                                    } catch (e) { console.warn("Соломка " + i + " не сработала."); }
+                                }
+                                throw new Error("Все серверы недоступны.");
+                            }
+
+                            tryFetchGame().then(text => { 
+                                const rows = text.split(/\r?\n/); let newTasks = []; 
+                                rows.forEach((row, idx) => { 
+                                    if(!row.trim() || idx === 0) return; 
+                                    const pts = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); 
+                                    if(pts && pts.length >= 1) { 
+                                        let q = pts[0].replace(/^"|"$/g,'').trim(), a = pts.length > 1 ? pts[1].replace(/^"|"$/g,'').trim() : ''; 
                                         if(q) newTasks.push({q:q, a:a}); 
                                     } 
                                 }); 
                                 if(newTasks.length > 0) { state.tasks = newTasks; prepareQuestions(); }
                                 finishTurn();
-                            }).catch(e=>{ console.error("Ошибка Google:", e); finishTurn(); }); 
+                            }).catch(e => { console.error("Ошибка Google:", e); finishTurn(); }); 
                         } else {
                             finishTurn();
                         }
