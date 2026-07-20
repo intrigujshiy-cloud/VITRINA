@@ -325,6 +325,7 @@
         <label><span data-t="col_btn">Кнопка</span> <input type="color" id="c-btn" value="#4CAF50" oninput="update()" style="height:25px;"></label>
     </div>
 
+    <button id="test-modal-btn" class="btn" style="background:#00bcd4; margin-bottom: 10px;" onclick="toggleTaskModal()">👁 НАСТРОИТЬ ОКНО</button>
     <button id="link-btn" class="btn" style="background:#9c27b0" onclick="toggleLinkMode()" data-t="btn_link">Связать кружки</button>
     <button class="btn" style="background:#ff9800" onclick="undo()" data-t="btn_undo">Отмена действия</button>
     <button class="btn" style="background:#2196F3" onclick="save(this)" data-t="btn_copy">Скопировать ссылку</button>
@@ -368,13 +369,9 @@
     <h2 id="modal-status" style="display:none;">ЗАДАНИЕ!</h2>
     <div id="task-question" class="inner-el" style="left: 10%; top: 10%; width: 80%; height: 35%; display: flex; align-items: center; justify-content: center; font-size:24px; font-weight:bold; word-wrap: break-word; overflow: auto;"></div>
     
-    <div class="inner-el" style="left: 15%; top: 48%; width: 70%; height: 65px;">
-        <input type="text" id="answer-input" style="width: 100%; height: 100%; border:none; resize: none;" autocomplete="off">
-    </div>
-    
-    <div class="inner-el" style="left: 30%; top: 75%; width: 40%; height: 45px;">
-        <button id="check-btn" class="action-btn" onclick="checkAnswer()" style="width: 100%; height: 100%;" onmousedown="event.stopPropagation()">CHECK</button>
-    </div>
+    <input type="text" id="answer-input" class="inner-el" style="left: 10%; top: 55%; width: 80%; height: 50px; min-width: 100px; min-height: 35px; border:none;" autocomplete="off">
+        
+<button id="check-btn" class="inner-el action-btn" onclick="checkAnswer()" style="left: 25%; top: 75%; width: 50%; height: 45px; min-width: 80px; min-height: 35px;" onmousedown="event.stopPropagation()">CHECK</button>
 </div>
 
 <canvas id="cvs"></canvas>
@@ -399,7 +396,7 @@
         else if (dragAction === 'height') { el.style.height = Math.max(150, startH + dy) + 'px'; }
         else if (dragAction === 'diag') { el.style.width = Math.max(200, startW + dx) + 'px'; el.style.height = Math.max(150, startH + dy) + 'px'; }
     }
-    function stopDrag() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); }
+    function stopDrag() { isDragging = false; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); if(typeof syncModalState === 'function') syncModalState(); }
 
     document.querySelectorAll('.inner-el').forEach(el => {
         el.addEventListener('mousedown', (e) => {
@@ -410,7 +407,95 @@
         });
     });
     function onInnerDrag(e) { if (!activeInnerEl) return; const modalRect = document.getElementById('task-modal').getBoundingClientRect(); activeInnerEl.style.left = (e.clientX - modalRect.left - innerOffsetX) + 'px'; activeInnerEl.style.top = (e.clientY - modalRect.top - innerOffsetY) + 'px'; }
-    function stopInnerDrag() { activeInnerEl = null; document.removeEventListener('mousemove', onInnerDrag); document.removeEventListener('mouseup', stopInnerDrag); }
+    function stopInnerDrag() { activeInnerEl = null; document.removeEventListener('mousemove', onInnerDrag); document.removeEventListener('mouseup', stopInnerDrag); if(typeof syncModalState === 'function') syncModalState(); }
+
+    function syncModalState() {
+        if (isGame) return;
+        const tm = document.getElementById('task-modal');
+        const qt = document.getElementById('task-question');
+        const ai = document.getElementById('answer-input');
+        const cb = document.getElementById('check-btn');
+        if (tm.offsetWidth > 0) {
+            let winW = window.innerWidth; let winH = window.innerHeight;
+            let tmW = tm.offsetWidth; let tmH = tm.offsetHeight;
+            state.modalConfig = {
+                mL: (tm.offsetLeft / winW * 100) + '%',
+                mT: (tm.offsetTop / winH * 100) + '%',
+                w: (tmW / winW * 100) + '%',
+                h: (tmH / winH * 100) + '%'
+            };
+            if(qt && ai && cb && tmW > 0 && tmH > 0) {
+                state.modalConfig.qL = (qt.offsetLeft / tmW * 100) + '%'; state.modalConfig.qT = (qt.offsetTop / tmH * 100) + '%';
+                state.modalConfig.qW = (qt.offsetWidth / tmW * 100) + '%'; state.modalConfig.qH = (qt.offsetHeight / tmH * 100) + '%';
+                state.modalConfig.aL = (ai.offsetLeft / tmW * 100) + '%'; state.modalConfig.aT = (ai.offsetTop / tmH * 100) + '%';
+                state.modalConfig.aW = (ai.offsetWidth / tmW * 100) + '%'; state.modalConfig.aH = (ai.offsetHeight / tmH * 100) + '%';
+                state.modalConfig.bL = (cb.offsetLeft / tmW * 100) + '%'; state.modalConfig.bT = (cb.offsetTop / tmH * 100) + '%';
+                state.modalConfig.bW = (cb.offsetWidth / tmW * 100) + '%'; state.modalConfig.bH = (cb.offsetHeight / tmH * 100) + '%';
+            }
+            try { localStorage.setItem('snakes_builder_state', encode(state)); } catch(e){}
+        }
+    }
+
+    function applyModalConfig() {
+        if (state.modalConfig) {
+                // Сбрасываем сбитые координаты от прошлой версии
+                if (state.modalConfig.aL === "0%" || parseFloat(state.modalConfig.aW) < 10 || parseFloat(state.modalConfig.bW) < 10 || parseFloat(state.modalConfig.aT) < 5) {
+                    state.modalConfig = null;
+                    return;
+                }
+            const tm = document.getElementById('task-modal');
+            const qt = document.getElementById('task-question');
+            const ai = document.getElementById('answer-input');
+            const cb = document.getElementById('check-btn');
+            tm.style.left = state.modalConfig.mL; tm.style.top = state.modalConfig.mT;
+            tm.style.width = state.modalConfig.w; tm.style.height = state.modalConfig.h;
+            if (state.modalConfig.qL) {
+                qt.style.left = state.modalConfig.qL; qt.style.top = state.modalConfig.qT; qt.style.width = state.modalConfig.qW; qt.style.height = state.modalConfig.qH;
+                ai.style.left = state.modalConfig.aL; ai.style.top = state.modalConfig.aT; ai.style.width = state.modalConfig.aW; ai.style.height = state.modalConfig.aH;
+                cb.style.left = state.modalConfig.bL; cb.style.top = state.modalConfig.bT; cb.style.width = state.modalConfig.bW; cb.style.height = state.modalConfig.bH;
+            }
+        }
+    }
+
+    function toggleTaskModal() {
+        const modal = document.getElementById('task-modal');
+        const btn = document.getElementById('test-modal-btn');
+        if (!modal.classList.contains('show')) {
+            // Применяем актуальные стили фона, цвета окна и кнопки
+            modal.style.backgroundColor = state.colors.modalBg;
+            if(state.modalBgImg) modal.style.backgroundImage = `url(${state.modalBgImg})`; else modal.style.backgroundImage = 'none';
+            modal.style.color = state.colors.modalTxt; 
+            modal.style.fontFamily = state.font;
+            document.getElementById('check-btn').style.backgroundColor = state.colors.btnBg;
+
+            // Берем реальный первый вопрос и ответ
+            let testQ = "ТЕСТОВЫЙ ВОПРОС?";
+            let testA = "Ответ";
+            if (state.tasks && state.tasks.length > 0) {
+                testQ = state.tasks[0].q;
+                testA = state.tasks[0].a;
+            }
+            
+            const qEl = document.getElementById('task-question');
+            if (state.latex) {
+                qEl.innerHTML = testQ; 
+                if(window.MathJax) MathJax.typesetPromise([qEl]).catch((err) => console.log(err));
+            } else {
+                qEl.innerText = testQ; 
+            }
+            
+            document.getElementById('answer-input').value = testA;
+
+            modal.classList.add('show');
+            modal.classList.remove('is-game');
+            if(btn) btn.innerText = '✖ СОХРАНИТЬ И ЗАКРЫТЬ';
+        } else {
+            syncModalState();
+            modal.classList.remove('show');
+            if(btn) btn.innerText = '👁 НАСТРОИТЬ ОКНО';
+            document.getElementById('answer-input').value = "";
+        }
+    }
 
     const cvs = document.getElementById('cvs'), ctx = cvs.getContext('2d'), cnfCvs = document.getElementById('confetti-canvas'), cnfCtx = cnfCvs.getContext('2d');
     let audioCtx = null; const bgMusic = new Audio(); bgMusic.loop = true;
@@ -723,6 +808,7 @@
         if(state.snakeImg)snakeImgObj.src=state.snakeImg; 
         if(state.cellImg)cellImgObj.src=state.cellImg; 
         state.tokens.forEach((u,i)=>{if(u)tImgs[i].src=u;}); 
+        if(typeof applyModalConfig === 'function') applyModalConfig();
     }
     function animate() { 
         pulseFrame+=0.035; hue=(hue+2)%360; 
@@ -870,7 +956,12 @@
         const inp = document.getElementById('answer-input'); inp.value = ""; setTimeout(()=>inp.focus(),100);
     }
     
-    function closeModal() { document.getElementById('task-modal').classList.remove('show'); }
+    function closeModal() { 
+        if(typeof syncModalState === 'function') syncModalState();
+        document.getElementById('task-modal').classList.remove('show'); 
+        let btn = document.getElementById('test-modal-btn');
+        if(btn) btn.innerText = '👁 НАСТРОИТЬ ОКНО';
+    }
     
     function checkAnswer() { 
         const m = document.getElementById('task-modal'), 
