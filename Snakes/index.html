@@ -12,6 +12,7 @@
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
     
     <style>
         /* ЗАЩИТА */
@@ -568,8 +569,11 @@
     function playSfx(freq, type='sine', duration=0.2, volume=0.1) { if(!audioCtx) return; const osc=audioCtx.createOscillator(), gain=audioCtx.createGain(); osc.type=type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); if(type==='snake'){osc.type='sawtooth'; osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime+duration);} gain.gain.setValueAtTime(volume, audioCtx.currentTime); gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime+duration); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime+duration); }
     function playDiceSound() { if(!audioCtx) return; for(let i=0;i<4;i++){ setTimeout(()=>{ const osc=audioCtx.createOscillator(), gain=audioCtx.createGain(); osc.type='triangle'; osc.frequency.setValueAtTime(60+Math.random()*40, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.05); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime+0.05); }, i*70); } }
     function playVictorySfx() { const notes=[440,440,440,554,659]; notes.forEach((f,i)=>setTimeout(()=>playSfx(f,'triangle',0.4,0.1), [0,0.12,0.24,0.36,0.55][i]*1000)); }
-    function encode(o) { return btoa(encodeURIComponent(JSON.stringify(o))); }
-    function decode(s) { return JSON.parse(decodeURIComponent(atob(s))); }
+    function encode(o) { return LZString.compressToEncodedURIComponent(JSON.stringify(o)); }
+    function decode(s) { 
+        let decompressed = LZString.decompressFromEncodedURIComponent(s);
+        return decompressed ? JSON.parse(decompressed) : JSON.parse(decodeURIComponent(atob(s))); 
+    }
     function prepareQuestions() { if(!state.tasks||state.tasks.length===0) return; questionQueue=state.tasks.map((_,i)=>i); for(let i=questionQueue.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [questionQueue[i],questionQueue[j]]=[questionQueue[j],questionQueue[i]]; } currentQuestionIdx=0; }
 
     function loadFromGoogle(urlOverride) { 
