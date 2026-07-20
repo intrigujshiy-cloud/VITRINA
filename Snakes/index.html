@@ -877,10 +877,24 @@
               tIdx = parseInt(m.getAttribute('data-ans-idx')), 
               input = document.getElementById('answer-input'); 
         
-        const userAnswer = input.value.trim().toLowerCase();
-        const correctAnswer = state.tasks[tIdx].a.toLowerCase();
+        // --- ПУЛЕНЕПРОБИВАЕМЫЙ НОРМАЛИЗАТОР ИЗ ЗОМБИ ---
+        const normalizeText = (text) => {
+            return text.toLowerCase()
+                .replace(/ё/g, 'е')
+                .replace(/[`’‘´]/g, "'") // Спасение для Английского: все виды апострофов превращаем в один
+                .replace(/["«»]/g, '') // Спасение для Литературы: полностью игнорируем любые кавычки
+                .replace(/\s+/g, ' ') 
+                .replace(/\s*([,.:;+\-*/=])\s*/g, '$1') // Убирает пробелы вокруг знаков, включая слеш (/)
+                .replace(/[.,!?;]+$/, '') 
+                .trim();
+        };
+
+        const userAnswer = normalizeText(input.value);
         
-        if (userAnswer === correctAnswer) { 
+        // Поддержка нескольких вариантов ответа через | (как в Зомби)
+        const correctOptions = state.tasks[tIdx].a.split('|').map(s => normalizeText(s));
+        
+        if (correctOptions.includes(userAnswer)) { 
             playSfx(600);
             if (isGame) {
                 questionQueue.shift();
