@@ -16,14 +16,13 @@
             user-select: none; /* Standard */
         }
         
-        #setup-screen { position: fixed; inset: 0; background: var(--cyber-bg); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        #setup-screen { position: fixed; inset: 0; background: var(--cyber-bg); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .setup-panel { position: relative; background: var(--cyber-panel); padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); border: 1px solid var(--cyber-accent); width: 100%; max-width: 900px; display: flex; flex-direction: row; gap: 20px; height: 85vh; color: white; }
         .col-left { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; }
         .col-right { flex: 1; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; padding-left: 20px; }
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
         .color-inputs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; }
         .color-field { display: flex; flex-direction: column; align-items: center; font-size: 11px; gap: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        /* Разрешаем выделение в полях редактора */
         textarea, input { user-select: auto; }
         textarea { height: 100px; padding: 12px; background: #000; border: 1px solid #333; border-radius: 8px; resize: none; font-family: 'Courier New', monospace; width: 100%; box-sizing: border-box; color: var(--cyber-accent); outline: none; }
         #preview-zone { width: 100%; flex-grow: 1; min-height: 150px; border: 2px dashed var(--cyber-accent); border-radius: 10px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative; transition: background-image 0.3s; }
@@ -32,27 +31,30 @@
         .copy-group { display: flex; gap: 10px; margin-top: 10px; }
         .btn-iframe { background: transparent; color: var(--cyber-accent); border: 1px solid var(--cyber-accent); padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%; transition: 0.3s; text-align: center; }
         .btn-iframe:hover { background: rgba(0, 242, 255, 0.1); box-shadow: 0 0 10px rgba(0, 242, 255, 0.2); }
-        #iframeResult { background: #0a0a0f; color: #00f2ff; padding: 15px; font-family: 'Courier New', monospace; font-size: 11px; border: 1px solid #333; border-radius: 8px; display: none; margin-top: 10px; width: 100%; box-sizing: border-box; word-break: break-all; white-space: pre-wrap; max-height: 150px; overflow-y: auto; }
         
-        .editor-logo { 
-            position: absolute; 
-            top: 0px; 
-            right: 25px; 
-            z-index: 20; display: block; cursor: pointer; 
-            transition: transform 0.3s;
-        }
-        .editor-logo img {
-            height: 110px; 
-            width: auto;
-            filter: drop-shadow(0 0 5px #ffd700); 
-            /* Запрет перетаскивания картинки логотипа */
-            -webkit-user-drag: none;
-        }
+        .editor-logo { position: absolute; top: 0px; right: 25px; z-index: 20; display: block; cursor: pointer; transition: transform 0.3s; }
+        .editor-logo img { height: 110px; width: auto; filter: drop-shadow(0 0 5px #ffd700); -webkit-user-drag: none; }
         .editor-logo:hover { transform: scale(1.1); }
 
         #game-screen { display: none; height: 100vh; flex-direction: column; background-size: cover; background-position: center; position: relative; }
         .overlay { position: absolute; inset: 0; background: var(--bg-overlay); display: flex; flex-direction: column; }
-        .header { height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px; background: white; z-index: 10; box-shadow: 0 5px 20px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .header { height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px; background: white; z-index: 10; box-shadow: 0 5px 20px rgba(0,0,0,0.1); flex-shrink: 0; position: relative; }
+        
+        #moduleDisplay {
+            position: absolute; 
+            left: 20px; 
+            font-size: 40px; 
+            font-weight: bold; 
+            color: var(--primary); 
+            text-transform: uppercase; 
+            letter-spacing: 2px;
+            animation: softPulse 3s infinite alternate ease-in-out;
+        }
+        @keyframes softPulse {
+            0% { text-shadow: 0 0 5px var(--card-neon), 0 0 10px var(--card-neon); opacity: 0.85; }
+            100% { text-shadow: 0 0 15px var(--card-neon), 0 0 30px var(--card-neon); opacity: 1; }
+        }
+
         .dot { width: 12px; height: 12px; border-radius: 50%; background: #ddd; transition: 0.5s; cursor: pointer; }
         .dot.active { background: var(--primary); transform: scale(1.4); }
         .dot:hover { transform: scale(1.2); background: #bbb; }
@@ -68,16 +70,16 @@
         .card.flipped .card-inner { transform: rotateY(180deg); }
         
         .card-face { position: absolute; inset: 0; backface-visibility: hidden; background: var(--card-bg); border: 3px solid var(--card-border); border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px; text-align: center; box-shadow: 0 0 15px var(--card-neon), 0 0 30px var(--card-neon); color: #000 !important; }
-        .card-face img { width: 100%; height: 60%; object-fit: contain; display: block; -webkit-user-drag: none; pointer-events: none; /* Картинка не реагирует на мышь */ }
+        .card-face img { width: 100%; height: 60%; object-fit: contain; display: block; -webkit-user-drag: none; pointer-events: none; }
         .card-face div { height: 35%; display: flex; align-items: center; justify-content: center; width: 100%; line-height: 1.1; overflow: hidden; }
         .card-back { transform: rotateY(180deg); font-weight: bold; color: #000 !important; display: flex; align-items: center; justify-content: center; }
         .preview-card { width: 120px; height: 160px; position: relative; transform-style: preserve-3d; }
         .footer { height: 70px; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
         .next-btn { padding: 10px 30px; background: var(--btn-next); color: white; border: none; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         
-        .match-item { padding: 10px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 10px; cursor: pointer; width: 45%; font-weight: bold; text-align: center; margin-bottom: 8px; box-shadow: 0 0 10px var(--card-neon), 0 0 20px var(--card-neon); color: #000 !important; font-size: 16px; }
+        .match-item { padding: 10px; background: var(--card-bg); border: 2px solid var(--card-border); border-radius: 10px; cursor: pointer; width: 45%; font-weight: bold; text-align: center; margin-bottom: 8px; box-shadow: 0 0 10px var(--card-neon), 0 0 20px var(--card-neon); color: #000 !important; font-size: 16px; transition: all 0.3s ease; overflow: hidden; }
         .match-item.selected { background: var(--card-border); color: white !important; }
-        .match-item.hidden { opacity: 0; pointer-events: none; }
+        .match-item.hidden { opacity: 0; transform: scale(0.8); pointer-events: none; } 
         @keyframes shake { 0%{transform: translateX(0);} 25%{transform: translateX(-5px);} 50%{transform: translateX(5px);} 75%{transform: translateX(-5px);} 100%{transform: translateX(0);} }
         .shake { animation: shake 0.4s; background: #ff4444 !important; color: white !important; }
         #az { min-height: 50px; border-bottom: 3px dashed var(--primary); margin: 15px auto; font-size: 30px; color: #000; letter-spacing: 5px; text-transform: uppercase; width: fit-content; padding: 0 20px; background: rgba(255,255,255,0.8); border-radius: 10px; }
@@ -98,34 +100,59 @@
     </style>
 </head>
 <body onload="init()">
-
     <div id="setup-screen">
         <div class="setup-panel">
-            <a id="editorBrandLink" href="#" target="_blank" class="editor-logo">
-                <img id="editorBrandImg" src="" alt="Brand">
+            <a id="editorBrandLink" href="https://vk.com/arcenciell" target="_blank" class="editor-logo">
+                <img id="editorBrandImg" src="https://img.genially.com/66f3a31bcd1a12001568ab85/e2f9782f-1bde-4587-aa17-200d384d37fc.png" alt="Brand">
             </a>
             
-            <div class="col-left"><h2 style="margin:0;color:var(--cyber-accent);letter-spacing:2px;">DATA ENTRY</h2><div class="grid-inputs"><div><label>English</label><textarea id="enList" placeholder="apple...">apple&#10;cat&#10;robot</textarea></div><div><label>Russian</label><textarea id="ruList" placeholder="яблоко...">яблоко&#10;кот&#10;робот</textarea></div><div><label>Images</label><textarea id="imgList" placeholder="Leave empty for auto!"></textarea></div></div><h2 style="margin:10px 0 0;color:var(--cyber-accent);letter-spacing:2px;">VISUAL STYLES</h2><div class="color-inputs"><div class="color-field"><label>Border</label><input type="color" id="colorBorder" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Card BG</label><input type="color" id="colorBg" value="#ffffff" oninput="uS()"></div><div class="color-field"><label>Neon</label><input type="color" id="colorNeon" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Buttons</label><input type="color" id="colorBtn" value="#4a90e2" oninput="uS()"></div></div>
-            <div style="margin-top:10px">
-                <label>Background URL / File</label>
-                <input type="text" id="bgInput" placeholder="Ссылка на фон" oninput="uS()" style="padding:10px;background:#000;border:1px solid #333;color:white;border-radius:5px;width:96%; margin-bottom: 8px;">
-                <input type="file" id="bgFileInput" accept="image/*" onchange="loadLocalBg(event)" style="color:var(--cyber-accent); font-size:12px; width:96%;">
+            <div class="col-left">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0;color:var(--cyber-accent);letter-spacing:2px;">DATA ENTRY</h2>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <label style="color:#fff; font-size:12px; text-transform:uppercase;">Module:</label>
+                        <input type="text" id="modInput" placeholder="e.g. 1a" style="padding:5px 10px; background:#000; border:1px solid #333; color:var(--cyber-accent); border-radius:5px; width:80px; text-align:center; font-weight:bold; outline:none;">
+                    </div>
+                </div>
+                <div class="grid-inputs">
+                    <div><label>English</label><textarea id="enList" placeholder="apple...">apple&#10;cat&#10;robot</textarea></div>
+                    <div><label>Russian</label><textarea id="ruList" placeholder="яблоко...">яблоко&#10;кот&#10;робот</textarea></div>
+                    <div><label>Images</label><textarea id="imgList" placeholder="Leave empty for auto!"></textarea></div>
+                </div>
+                <h2 style="margin:10px 0 0;color:var(--cyber-accent);letter-spacing:2px;">VISUAL STYLES</h2>
+                <div class="color-inputs">
+                    <div class="color-field"><label>Border</label><input type="color" id="colorBorder" value="#4a90e2" oninput="uS()"></div>
+                    <div class="color-field"><label>Card BG</label><input type="color" id="colorBg" value="#ffffff" oninput="uS()"></div>
+                    <div class="color-field"><label>Neon</label><input type="color" id="colorNeon" value="#4a90e2" oninput="uS()"></div>
+                    <div class="color-field"><label>Buttons</label><input type="color" id="colorBtn" value="#4a90e2" oninput="uS()"></div>
+                </div>
+                <div style="margin-top:10px"><label>Background URL</label><input type="text" id="bgInput" oninput="uS()" style="padding:10px;background:#000;border:1px solid #333;color:white;border-radius:5px;width:96%;"></div>
             </div>
-            </div><div class="col-right"><h2 style="margin:0;color:#ff0055;letter-spacing:2px;">LIVE PREVIEW</h2><div style="font-size:12px;color:#888;">Real-time check</div><div id="preview-zone"><div id="preview-label">PREVIEW</div><div class="preview-card"><div class="card-face"><img src="https://tse2.mm.bing.net/th?q=apple+cartoon+clipart&w=400&h=400&c=7&rs=1&p=0" style="object-fit:contain;"><div style="margin-top:10px">Apple</div></div></div></div>
-            <button class="btn-start" onclick="sG()">START GAME 🚀</button>
-            <div class="copy-group">
-                <button class="btn-iframe" onclick="copyLink()">КОПИРОВАТЬ ССЫЛКУ 🔗</button>
-                <button class="btn-iframe" onclick="copyCode()">КОПИРОВАТЬ КОД (IFRAME) </> </button>
+            <div class="col-right">
+                <h2 style="margin:0;color:#ff0055;letter-spacing:2px;">LIVE PREVIEW</h2>
+                <div style="font-size:12px;color:#888;">Real-time check</div>
+                <div id="preview-zone">
+                    <div id="preview-label">PREVIEW</div>
+                    <div class="preview-card"><div class="card-face"><img src="https://tse2.mm.bing.net/th?q=apple+cartoon+clipart&w=400&h=400&c=7&rs=1&p=0" style="object-fit:contain;"><div style="margin-top:10px">Apple</div></div></div>
+                </div>
+                <button class="btn-start" onclick="sG()">START GAME 🚀</button>
+                <div class="copy-group">
+                    <button class="btn-iframe" onclick="copyLink()">КОПИРОВАТЬ ССЫЛКУ 🔗</button>
+                    <button class="btn-iframe" onclick="copyCode()">КОПИРОВАТЬ КОД (IFRAME) </></button>
+                </div>
             </div>
-            </div></div></div>
+        </div>
+    </div>
     
     <div id="game-screen">
         <div class="overlay">
             <div class="header">
+                <div id="moduleDisplay"></div>
                 <div class="dot" id="d1" onclick="goToLevel(1)"></div>
                 <div class="dot" id="d2" onclick="goToLevel(2)"></div>
                 <div class="dot" id="d3" onclick="goToLevel(3)"></div>
                 <div class="dot" id="d4" onclick="goToLevel(4)"></div>
+                <div class="dot" id="d5" onclick="goToLevel(5)"></div>
             </div>
             <div id="content" class="content"></div>
             <div class="footer"><button id="nextBtn" class="next-btn" onclick="nL()">NEXT →</button></div>
@@ -136,32 +163,15 @@
     <div id="victory"><div class="hero-img">🦸‍♂️</div><h1>SUPERHERO!</h1><p style="font-size: 20px;">Mission accomplished!</p><button class="next-btn" style="margin-top: 30px;" onclick="location.reload()">REPLAY</button></div>
     
     <script>
-        console.log("%cSTOP! Protected content.", "color: red; font-size: 30px;");
-        let w = [], lvl = 1, mS = { en: null, ru: null }, cI = 0;
+        let w = [], playW = [], lvl = 1, mS = { en: null, ru: null }, cI = 0;
         
-        const _0xSec = ["aHR0cHM6Ly9pbWcuZ2VuaWFsbHkuY29tLzY2ZjNhMzFiY2QxYTEyMDAxNTY4YWI4NS9lMmY5NzgyZi0xYmRlLTQ1ODctYWExNy0yMDBkMzg0ZDM3ZmMucG5n", "aHR0cHM6Ly92ay5jb20vYXJjZW5jaWVsbA==", "NDc1NTE3NTA="];
-
         function init() {
             const ps = new URLSearchParams(window.location.search);
             if(ps.has('play')) {
                 loadGameFromUrl(ps);
             } else {
                 document.getElementById('setup-screen').style.display = 'flex';
-                document.getElementById('editorBrandImg').src = atob(_0xSec[0]);
-                document.getElementById('editorBrandLink').href = atob(_0xSec[1]); 
                 uS(); 
-            }
-        }
-
-        function loadLocalBg(e) {
-            const file = e.target.files[0];
-            if(file) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    document.getElementById('bgInput').value = evt.target.result;
-                    uS();
-                };
-                reader.readAsDataURL(file);
             }
         }
 
@@ -185,8 +195,8 @@
         }
         
         function getUrl() {
-            const e = encodeURIComponent(document.getElementById('enList').value.split('\n').join(',')), r = encodeURIComponent(document.getElementById('ruList').value.split('\n').join(',')), i = encodeURIComponent(document.getElementById('imgList').value.split('\n').join(',')), bg = encodeURIComponent(document.getElementById('bgInput').value);
-            const p = `play=true&en=${e}&ru=${r}&im=${i}&bg=${bg}&cb=${encodeURIComponent(document.getElementById('colorBorder').value)}&cg=${encodeURIComponent(document.getElementById('colorBg').value)}&cn=${encodeURIComponent(document.getElementById('colorNeon').value)}&ct=${encodeURIComponent(document.getElementById('colorBtn').value)}`;
+            const e = encodeURIComponent(document.getElementById('enList').value.split('\n').join(',')), r = encodeURIComponent(document.getElementById('ruList').value.split('\n').join(',')), i = encodeURIComponent(document.getElementById('imgList').value.split('\n').join(',')), bg = encodeURIComponent(document.getElementById('bgInput').value), mod = encodeURIComponent(document.getElementById('modInput').value);
+            const p = `play=true&en=${e}&ru=${r}&im=${i}&bg=${bg}&mod=${mod}&cb=${encodeURIComponent(document.getElementById('colorBorder').value)}&cg=${encodeURIComponent(document.getElementById('colorBg').value)}&cn=${encodeURIComponent(document.getElementById('colorNeon').value)}&ct=${encodeURIComponent(document.getElementById('colorBtn').value)}`;
             return `${window.location.href.split('?')[0]}?${p}`;
         }
 
@@ -206,45 +216,145 @@
             w = e.map((x, k) => { let s = (i[k]||"").trim(); if(!s && x.trim()) s = `https://tse2.mm.bing.net/th?q=${encodeURIComponent(x.trim()+' cartoon clipart')}&w=300&h=300&c=7&rs=1&p=0`; return { en: x.trim(), ru: (r[k]||"").trim(), im: s }; }).filter(x => x.en && x.ru);
             const bu = document.getElementById('bgInput').value; if(bu) document.getElementById('game-screen').style.backgroundImage = `url(${bu})`;
             setBrand();
+            
+            playW = JSON.parse(JSON.stringify(w));
+            document.getElementById('moduleDisplay').innerText = document.getElementById('modInput').value ? 'Module ' + document.getElementById('modInput').value : '';
+            
             document.getElementById('setup-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; rL();
         }
 
         function loadGameFromUrl(ps) {
-            document.getElementById('colorBorder').value = ps.get('cb'); document.getElementById('colorBg').value = ps.get('cg'); document.getElementById('colorNeon').value = ps.get('cn'); document.getElementById('colorBtn').value = ps.get('ct'); uS(); const pe = ps.get('en').split(','), pr = ps.get('ru').split(','), pi = ps.get('im').split(','); w = pe.map((x, k) => { let s = pi[k]||""; if(!s && x) s = `https://tse2.mm.bing.net/th?q=${encodeURIComponent(x+' cartoon clipart')}&w=300&h=300&c=7&rs=1&p=0`; return { en: x, ru: pr[k], im: s }; }); const bg = ps.get('bg'); if(bg) { document.getElementById('bgInput').value = bg; document.getElementById('game-screen').style.backgroundImage = `url(${bg})`; } 
+            document.getElementById('colorBorder').value = ps.get('cb'); document.getElementById('colorBg').value = ps.get('cg'); document.getElementById('colorNeon').value = ps.get('cn'); document.getElementById('colorBtn').value = ps.get('ct'); 
+            document.getElementById('modInput').value = ps.get('mod') || '';
+            uS(); 
+            const pe = ps.get('en').split(','), pr = ps.get('ru').split(','), pi = ps.get('im').split(','); 
+            w = pe.map((x, k) => { let s = pi[k]||""; if(!s && x) s = `https://tse2.mm.bing.net/th?q=${encodeURIComponent(x+' cartoon clipart')}&w=300&h=300&c=7&rs=1&p=0`; return { en: x, ru: pr[k], im: s }; }); 
+            const bg = ps.get('bg'); if(bg) { document.getElementById('bgInput').value = bg; document.getElementById('game-screen').style.backgroundImage = `url(${bg})`; } 
             setBrand();
+            
+            playW = JSON.parse(JSON.stringify(w));
+            document.getElementById('moduleDisplay').innerText = document.getElementById('modInput').value ? 'Module ' + document.getElementById('modInput').value : '';
+            
             document.getElementById('setup-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; rL();
         }
 
         function setBrand() {
-            document.getElementById('brandImg').src = atob(_0xSec[0]); 
-            document.getElementById('brandLink').href = atob(_0xSec[1]);
+            document.getElementById('brandImg').src = "https://img.genially.com/66f3a31bcd1a12001568ab85/e2f9782f-1bde-4587-aa17-200d384d37fc.png"; 
+            document.getElementById('brandLink').href = "https://vk.com/arcenciell";
         }
 
         function goToLevel(n) {
             lvl = n;
             cI = 0; 
+            playW = JSON.parse(JSON.stringify(w));
             document.getElementById('victory').style.display = 'none';
             rL();
         }
 
         function rL() {
             const c = document.getElementById('content'); c.innerHTML = ''; document.querySelectorAll('.dot').forEach((d, k) => d.className = (k+1 === lvl) ? 'dot active' : 'dot'); document.getElementById('nextBtn').style.display = 'block';
+            
+            // УРОВЕНЬ 1: Знакомство (Карточки)
             if(lvl === 1) {
-                let sc = 'size-medium'; if(w.length <= 6) sc = 'size-large'; else if(w.length >= 13) sc = 'size-small';
-                w.forEach(x => { const d = document.createElement('div'); d.className = `card ${sc}`; d.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${x.im}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3875/3875172.png'"><div>${x.en}</div></div><div class="card-face card-back">${x.ru}</div></div>`; d.onclick = () => { d.classList.toggle('flipped'); if(d.classList.contains('flipped')) spk(x.en); }; c.appendChild(d); });
+                let sc = 'size-medium'; if(playW.length <= 6) sc = 'size-large'; else if(playW.length >= 13) sc = 'size-small';
+                playW.forEach(x => { const d = document.createElement('div'); d.className = `card ${sc}`; d.innerHTML = `<div class="card-inner"><div class="card-face"><img src="${x.im}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3875/3875172.png'"><div>${x.en}</div></div><div class="card-face card-back">${x.ru}</div></div>`; d.onclick = () => { d.classList.toggle('flipped'); if(d.classList.contains('flipped')) spk(x.en); }; c.appendChild(d); });
+            
+            // УРОВЕНЬ 2: Выбери картинку по слову (Новое задание)
             } else if(lvl === 2) {
-                document.getElementById('nextBtn').style.display = 'none'; const el = [...w].sort(() => Math.random()-0.5), rl = [...w].sort(() => Math.random()-0.5); const ce = document.createElement('div'), cr = document.createElement('div'); ce.style.width=cr.style.width='45%';
+                document.getElementById('nextBtn').style.display = 'none'; 
+                const x = playW[cI];
+                
+                // Выбираем 2 дистрактора (неправильные картинки)
+                let distractors = w.filter(item => item.en !== x.en);
+                distractors.sort(() => Math.random() - 0.5);
+                let options = [x, ...distractors.slice(0, 2)];
+                // Защита, если слов меньше 3
+                while(options.length < 3) options.push(options[0]);
+                options.sort(() => Math.random() - 0.5);
+
+                c.innerHTML = `<div style="text-align:center;width:100%"><h2 style="font-size:50px; color:#fff; text-shadow: 0 0 15px var(--card-neon), 0 0 30px var(--card-neon); margin-bottom:40px; text-transform:uppercase; letter-spacing: 2px;">${x.en}</h2><div id="img-options" style="display:flex; justify-content:center; gap:20px; flex-wrap:wrap;"></div></div>`;
+                
+                const container = c.querySelector('#img-options');
+                options.forEach(opt => {
+                    const imgWrap = document.createElement('div');
+                    imgWrap.style.cssText = "width:180px; height:180px; background:var(--card-bg); border:4px solid var(--card-border); border-radius:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:10px; box-shadow: 0 0 15px var(--card-neon); transition: transform 0.2s;";
+                    imgWrap.innerHTML = `<img src="${opt.im}" style="max-width:100%; max-height:100%; object-fit:contain; pointer-events:none;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3875/3875172.png'">`;
+                    
+                    imgWrap.onmousedown = () => imgWrap.style.transform = "scale(0.9)";
+                    imgWrap.onmouseup = () => imgWrap.style.transform = "scale(1)";
+                    imgWrap.onmouseleave = () => imgWrap.style.transform = "scale(1)";
+
+                    imgWrap.onclick = () => {
+                        if(opt.en === x.en) {
+                            spk(x.en);
+                            imgWrap.style.background = "#8bc34a"; // Подсветка правильного ответа
+                            imgWrap.style.borderColor = "#8bc34a";
+                            if(x.mistake) playW.push(JSON.parse(JSON.stringify({...x, mistake: false})));
+                            setTimeout(() => { 
+                                cI++; 
+                                if(cI < playW.length) rL(); 
+                                else { 
+                                    cI=0; 
+                                    document.getElementById('nextBtn').style.display='block'; 
+                                    c.innerHTML = `<div style="text-align:center; width:100%;"><div style="font-size:80px; margin-bottom:20px;">🎉</div><h2 style="font-size:40px; color:#fff; text-shadow: 0 0 15px var(--card-neon);">Great Job!</h2></div>`;
+                                } 
+                            }, 600);
+                        } else {
+                            x.mistake = true;
+                            imgWrap.classList.add('shake');
+                            setTimeout(() => imgWrap.classList.remove('shake'), 400);
+                        }
+                    };
+                    container.appendChild(imgWrap);
+                });
+
+            // УРОВЕНЬ 3 (Бывший 2): Сопоставление слов
+            } else if(lvl === 3) {
+                document.getElementById('nextBtn').style.display = 'none'; const el = [...playW].sort(() => Math.random()-0.5), rl = [...playW].sort(() => Math.random()-0.5); const ce = document.createElement('div'), cr = document.createElement('div'); ce.style.width=cr.style.width='45%';
                 el.forEach(x => { const b = document.createElement('div'); b.className = 'match-item'; b.innerText = x.en; b.onclick = () => { spk(x.en); hM(x.en, 'en', b); }; ce.appendChild(b); });
                 rl.forEach(x => { const b = document.createElement('div'); b.className = 'match-item'; b.innerText = x.ru; b.onclick = () => hM(x.en, 'ru', b); cr.appendChild(b); }); c.append(ce, cr);
-            } else if(lvl === 3) {
-                document.getElementById('nextBtn').style.display = 'none'; const x = w[cI]; let cs = ""; let lts = x.en.split('').sort(() => Math.random()-0.5);
+            
+            // УРОВЕНЬ 4 (Бывший 3): Сборка слова
+            } else if(lvl === 4) {
+                document.getElementById('nextBtn').style.display = 'none'; const x = playW[cI]; let cs = ""; let lts = x.en.split('').sort(() => Math.random()-0.5);
                 c.innerHTML = `<div style="text-align:center;width:100%"><img src="${x.im}" style="width:auto; height:auto; max-width:90%; max-height:30vh; object-fit:contain; display:block; margin:0 auto 10px" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3875/3875172.png'"><h3 style="color:#000;font-size:24px;margin:5px 0;">${x.ru}</h3><div id="az"></div><div id="lz"></div></div>`;
                 const az = document.getElementById('az');
-                lts.forEach(l => { const s = document.createElement('div'); s.className = 'match-item'; s.style.display='inline-block'; s.style.width='auto'; s.style.margin='5px'; s.style.padding='10px 20px'; s.innerText = l; s.onclick = () => { if (l.toLowerCase() === x.en[cs.length].toLowerCase()) { cs += l; az.innerText = cs; s.style.visibility = "hidden"; s.style.pointerEvents = "none"; if(cs.length === x.en.length) { spk(x.en); setTimeout(() => { cI++; if(cI < w.length) rL(); else { cI=0; document.getElementById('nextBtn').style.display='block'; } }, 600); } } else { s.classList.add('shake'); setTimeout(() => s.classList.remove('shake'), 400); } }; c.querySelector('#lz').appendChild(s); });
-            } else if(lvl === 4) {
-                document.getElementById('nextBtn').style.display = 'none'; const x = w[cI];
+                lts.forEach(l => { 
+                    const s = document.createElement('div'); s.className = 'match-item'; s.style.display='inline-block'; s.style.width='auto'; s.style.margin='5px'; s.style.padding='10px 20px'; s.innerText = l; 
+                    s.onclick = () => { 
+                        if (l.toLowerCase() === x.en[cs.length].toLowerCase()) { 
+                            cs += l; az.innerText = cs; s.style.visibility = "hidden"; s.style.pointerEvents = "none"; 
+                            if(cs.length === x.en.length) { 
+                                spk(x.en); 
+                                if(x.mistake) playW.push(JSON.parse(JSON.stringify({...x, mistake: false})));
+                                setTimeout(() => { cI++; if(cI < playW.length) rL(); else { cI=0; document.getElementById('nextBtn').style.display='block'; } }, 600); 
+                            } 
+                        } else { 
+                            x.mistake = true;
+                            s.classList.add('shake'); setTimeout(() => s.classList.remove('shake'), 400); 
+                        } 
+                    }; 
+                    c.querySelector('#lz').appendChild(s); 
+                });
+            
+            // УРОВЕНЬ 5 (Бывший 4): Напечатать слово
+            } else if(lvl === 5) {
+                document.getElementById('nextBtn').style.display = 'none'; const x = playW[cI];
                 c.innerHTML = `<div style="background:var(--card-bg);padding:20px;border-radius:20px;border:4px solid var(--card-border);text-align:center;width:90%;max-width:400px;margin:auto;box-shadow:0 0 20px var(--card-neon)"><img src="${x.im}" style="width:auto; height:auto; max-width:90%; max-height:150px; object-fit:contain;" onerror="this.src='https://cdn-icons-png.flaticon.com/512/3875/3875172.png'"><h3 style="color:#000;font-size:24px;">${x.ru}</h3><input type="text" id="wi" style="width:100%;font-size:30px;text-align:center;border:none;border-bottom:3px solid #ddd;outline:none;text-transform:uppercase;color:#000" autocomplete="off"></div>`;
-                const inp = document.getElementById('wi'); inp.focus(); inp.oninput = () => { if(inp.value.toLowerCase() === x.en.toLowerCase()) { spk(x.en); setTimeout(() => { cI++; if(cI < w.length) rL(); else { document.getElementById('victory').style.display='flex'; cf(); } }, 500); } };
+                const inp = document.getElementById('wi'); inp.focus(); 
+                inp.oninput = () => { 
+                    const val = inp.value.toLowerCase();
+                    const target = x.en.toLowerCase();
+                    if(val === target) { 
+                        spk(x.en); 
+                        if(x.mistake) playW.push(JSON.parse(JSON.stringify({...x, mistake: false})));
+                        setTimeout(() => { cI++; if(cI < playW.length) rL(); else { document.getElementById('victory').style.display='flex'; cf(); } }, 500); 
+                    } else if (!target.startsWith(val)) {
+                        x.mistake = true;
+                        inp.classList.add('shake');
+                        setTimeout(() => inp.classList.remove('shake'), 400);
+                    }
+                };
             }
         }
         
@@ -262,24 +372,47 @@
         }
         window.speechSynthesis.onvoiceschanged = () => {};
         
-        function hM(v, t, b) { if(mS[t]) mS[t].b.classList.remove('selected'); mS[t] = { v, b }; b.classList.add('selected'); if(mS.en && mS.ru) { if(mS.en.v === mS.ru.v) { mS.en.b.classList.add('hidden'); mS.ru.b.classList.add('hidden'); mS = { en: null, ru: null }; if(document.querySelectorAll('.match-item:not(.hidden)').length === 0) document.getElementById('nextBtn').style.display = 'block'; } else { setTimeout(() => { mS.en.b.classList.remove('selected'); mS.ru.b.classList.remove('selected'); mS = { en: null, ru: null }; }, 400); } } }
-        function nL() { lvl++; cI = 0; if(lvl > 4) { document.getElementById('victory').style.display='flex'; cf(); } else rL(); }
+        function hM(v, t, b) { 
+            if(mS[t]) mS[t].b.classList.remove('selected'); 
+            mS[t] = { v, b }; b.classList.add('selected'); 
+            if(mS.en && mS.ru) { 
+                if(mS.en.v === mS.ru.v) { 
+                    const eB = mS.en.b; const rB = mS.ru.b;
+                    eB.classList.add('hidden'); rB.classList.add('hidden'); 
+                    mS = { en: null, ru: null }; 
+                    
+                    setTimeout(() => {
+                        eB.style.display = 'none';
+                        rB.style.display = 'none';
+                    }, 300);
+
+                    if(document.querySelectorAll('.match-item:not(.hidden)').length === 0) document.getElementById('nextBtn').style.display = 'block'; 
+                } else { 
+                    setTimeout(() => { mS.en.b.classList.remove('selected'); mS.ru.b.classList.remove('selected'); mS = { en: null, ru: null }; }, 400); 
+                } 
+            } 
+        }
+        function nL() { 
+            lvl++; cI = 0; 
+            playW = JSON.parse(JSON.stringify(w)); 
+            if(lvl > 5) { document.getElementById('victory').style.display='flex'; cf(); } else rL(); 
+        }
         function cf() { for(let j=0; j<50; j++) { const c = document.createElement('div'); c.className = 'confetti'; c.style.left = Math.random()*100+'vw'; c.style.background = `hsl(${Math.random()*360}, 100%, 50%)`; c.style.animationDelay = Math.random()*3+'s'; document.getElementById('victory').appendChild(c); } }
 
         /* 🔥 ЗАЩИТА ОТ КОПИРОВАНИЯ И ПЕРЕТАСКИВАНИЯ 🔥 */
-        document.addEventListener('contextmenu', event => event.preventDefault()); // Блок правой кнопки
-        document.onselectstart = function() { return false; }; // Блок выделения
-        document.ondragstart = function() { return false; }; // Блок перетаскивания
+        document.addEventListener('contextmenu', event => event.preventDefault()); 
+        document.onselectstart = function() { return false; }; 
+        document.ondragstart = function() { return false; }; 
 
         document.onkeydown = function(e) {
-            if (e.keyCode == 123) return false; // F12
+            if (e.keyCode == 123) return false; 
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) return false;
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) return false;
             if (e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) return false;
             if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
             if (e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) return false;
-            if (e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)) return false; // Ctrl+C
-            if (e.ctrlKey && e.keyCode == 'A'.charCodeAt(0)) return false; // Ctrl+A
+            if (e.ctrlKey && e.keyCode == 'C'.charCodeAt(0)) return false; 
+            if (e.ctrlKey && e.keyCode == 'A'.charCodeAt(0)) return false; 
         };
     </script>
 </body>
