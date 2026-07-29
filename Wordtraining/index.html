@@ -17,8 +17,7 @@
         }
         
         #setup-screen { position: fixed; inset: 0; background: var(--cyber-bg); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
-        .setup-panel { position: relative; background: var(--cyber-panel); padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); border: 1px solid var(--cyber-accent); width: 100%; max-width: 900px; display: flex; flex-direction: row; gap: 20px; height: 85vh; color: white; transition: 0.3s; }
-        .setup-panel.drag-over { box-shadow: 0 0 50px rgba(255, 0, 85, 0.5) !important; border-color: #ff0055 !important; background: rgba(26, 26, 36, 0.95) !important; }
+        .setup-panel { position: relative; background: var(--cyber-panel); padding: 20px; border-radius: 15px; box-shadow: 0 0 30px rgba(0, 242, 255, 0.2); border: 1px solid var(--cyber-accent); width: 100%; max-width: 900px; display: flex; flex-direction: row; gap: 20px; height: 85vh; color: white; }
         .col-left { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; }
         .col-right { flex: 1; display: flex; flex-direction: column; gap: 15px; border-left: 1px solid #333; padding-left: 20px; }
         .grid-inputs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
@@ -53,7 +52,7 @@
 
         #game-screen { display: none; height: 100vh; flex-direction: column; background-size: cover; background-position: center; position: relative; }
         .overlay { position: absolute; inset: 0; background: var(--bg-overlay); display: flex; flex-direction: column; }
-        .header { height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px; background: white; z-index: 10; box-shadow: 0 5px 20px rgba(0,0,0,0.1); flex-shrink: 0; position: relative; }
+        .header { height: 60px; display: flex; justify-content: center; align-items: center; gap: 15px; background: white; z-index: 10; box-shadow: 0 5px 20px rgba(0,0,0,0.1); flex-shrink: 0; }
         .dot { width: 12px; height: 12px; border-radius: 50%; background: #ddd; transition: 0.5s; cursor: pointer; }
         .dot.active { background: var(--primary); transform: scale(1.4); }
         .dot:hover { transform: scale(1.2); background: #bbb; }
@@ -106,18 +105,9 @@
                 <img id="editorBrandImg" src="" alt="Brand">
             </a>
             
-            <div class="col-left">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 0;">
-                    <h2 style="margin:0;color:var(--cyber-accent);letter-spacing:2px;">DATA ENTRY</h2>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="font-size: 14px; color: white;">MODULE:</span>
-                        <input type="text" id="modInput" placeholder="e.g. 1a" oninput="uS()" style="padding: 5px 10px; background: #000; border: 1px solid #333; color: white; border-radius: 5px; width: 60px; text-align: center;">
-                    </div>
-                </div>
-                
-                <div class="grid-inputs"><div><label>English</label><textarea id="enList" placeholder="apple...">apple&#10;cat&#10;robot</textarea></div><div><label>Russian</label><textarea id="ruList" placeholder="яблоко...">яблоко&#10;кот&#10;робот</textarea></div><div><label>Images</label><textarea id="imgList" placeholder="Leave empty for auto!"></textarea></div></div><h2 style="margin:10px 0 0;color:var(--cyber-accent);letter-spacing:2px;">VISUAL STYLES</h2><div class="color-inputs"><div class="color-field"><label>Border</label><input type="color" id="colorBorder" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Card BG</label><input type="color" id="colorBg" value="#ffffff" oninput="uS()"></div><div class="color-field"><label>Neon</label><input type="color" id="colorNeon" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Buttons</label><input type="color" id="colorBtn" value="#4a90e2" oninput="uS()"></div></div>
+            <div class="col-left"><h2 style="margin:0;color:var(--cyber-accent);letter-spacing:2px;">DATA ENTRY</h2><div class="grid-inputs"><div><label>English</label><textarea id="enList" placeholder="apple...">apple&#10;cat&#10;robot</textarea></div><div><label>Russian</label><textarea id="ruList" placeholder="яблоко...">яблоко&#10;кот&#10;робот</textarea></div><div><label>Images</label><textarea id="imgList" placeholder="Leave empty for auto!"></textarea></div></div><h2 style="margin:10px 0 0;color:var(--cyber-accent);letter-spacing:2px;">VISUAL STYLES</h2><div class="color-inputs"><div class="color-field"><label>Border</label><input type="color" id="colorBorder" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Card BG</label><input type="color" id="colorBg" value="#ffffff" oninput="uS()"></div><div class="color-field"><label>Neon</label><input type="color" id="colorNeon" value="#4a90e2" oninput="uS()"></div><div class="color-field"><label>Buttons</label><input type="color" id="colorBtn" value="#4a90e2" oninput="uS()"></div></div>
             <div style="margin-top:10px">
-                <label>Background URL / File (Drag & Drop)</label>
+                <label>Background URL / File</label>
                 <input type="text" id="bgInput" placeholder="Ссылка на фон" oninput="uS()" style="padding:10px;background:#000;border:1px solid #333;color:white;border-radius:5px;width:96%; margin-bottom: 8px;">
                 <input type="file" id="bgFileInput" accept="image/*" onchange="loadLocalBg(event)" style="color:var(--cyber-accent); font-size:12px; width:96%;">
             </div>
@@ -132,7 +122,6 @@
     <div id="game-screen">
         <div class="overlay">
             <div class="header">
-                <div id="moduleDisplay" style="position: absolute; left: 20px; font-weight: bold; color: var(--primary); font-size: 24px; text-transform: uppercase; text-shadow: 0 0 10px var(--card-neon), 0 0 20px var(--card-neon);"></div>
                 <div class="dot" id="d1" onclick="goToLevel(1)"></div>
                 <div class="dot" id="d2" onclick="goToLevel(2)"></div>
                 <div class="dot" id="d3" onclick="goToLevel(3)"></div>
@@ -161,31 +150,6 @@
                 document.getElementById('editorBrandImg').src = atob(_0xSec[0]);
                 document.getElementById('editorBrandLink').href = atob(_0xSec[1]); 
                 uS(); 
-            }
-
-            // Добавляем обработчики Drag & Drop для панели настроек
-            const dp = document.querySelector('.setup-panel');
-            if(dp) {
-                dp.addEventListener('dragover', e => { 
-                    e.preventDefault(); 
-                    dp.classList.add('drag-over'); 
-                });
-                dp.addEventListener('dragleave', e => { 
-                    e.preventDefault(); 
-                    dp.classList.remove('drag-over'); 
-                });
-                dp.addEventListener('drop', e => {
-                    e.preventDefault(); 
-                    dp.classList.remove('drag-over');
-                    if(e.dataTransfer.files && e.dataTransfer.files[0] && e.dataTransfer.files[0].type.startsWith('image/')) {
-                        const r = new FileReader();
-                        r.onload = evt => { 
-                            document.getElementById('bgInput').value = evt.target.result; 
-                            uS(); 
-                        };
-                        r.readAsDataURL(e.dataTransfer.files[0]);
-                    }
-                });
             }
         }
 
@@ -221,8 +185,8 @@
         }
         
         function getUrl() {
-            const e = encodeURIComponent(document.getElementById('enList').value.split('\n').join(',')), r = encodeURIComponent(document.getElementById('ruList').value.split('\n').join(',')), i = encodeURIComponent(document.getElementById('imgList').value.split('\n').join(',')), bg = encodeURIComponent(document.getElementById('bgInput').value), md = encodeURIComponent(document.getElementById('modInput').value);
-            const p = `play=true&en=${e}&ru=${r}&im=${i}&bg=${bg}&md=${md}&cb=${encodeURIComponent(document.getElementById('colorBorder').value)}&cg=${encodeURIComponent(document.getElementById('colorBg').value)}&cn=${encodeURIComponent(document.getElementById('colorNeon').value)}&ct=${encodeURIComponent(document.getElementById('colorBtn').value)}`;
+            const e = encodeURIComponent(document.getElementById('enList').value.split('\n').join(',')), r = encodeURIComponent(document.getElementById('ruList').value.split('\n').join(',')), i = encodeURIComponent(document.getElementById('imgList').value.split('\n').join(',')), bg = encodeURIComponent(document.getElementById('bgInput').value);
+            const p = `play=true&en=${e}&ru=${r}&im=${i}&bg=${bg}&cb=${encodeURIComponent(document.getElementById('colorBorder').value)}&cg=${encodeURIComponent(document.getElementById('colorBg').value)}&cn=${encodeURIComponent(document.getElementById('colorNeon').value)}&ct=${encodeURIComponent(document.getElementById('colorBtn').value)}`;
             return `${window.location.href.split('?')[0]}?${p}`;
         }
 
@@ -241,23 +205,12 @@
             uS(); const e = document.getElementById('enList').value.split('\n'), r = document.getElementById('ruList').value.split('\n'), i = document.getElementById('imgList').value.split('\n');
             w = e.map((x, k) => { let s = (i[k]||"").trim(); if(!s && x.trim()) s = `https://tse2.mm.bing.net/th?q=${encodeURIComponent(x.trim()+' cartoon clipart')}&w=300&h=300&c=7&rs=1&p=0`; return { en: x.trim(), ru: (r[k]||"").trim(), im: s }; }).filter(x => x.en && x.ru);
             const bu = document.getElementById('bgInput').value; if(bu) document.getElementById('game-screen').style.backgroundImage = `url(${bu})`;
-            
-            const modVal = document.getElementById('modInput').value;
-            if(modVal) { document.getElementById('moduleDisplay').innerText = modVal; }
-
             setBrand();
             document.getElementById('setup-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; rL();
         }
 
         function loadGameFromUrl(ps) {
             document.getElementById('colorBorder').value = ps.get('cb'); document.getElementById('colorBg').value = ps.get('cg'); document.getElementById('colorNeon').value = ps.get('cn'); document.getElementById('colorBtn').value = ps.get('ct'); uS(); const pe = ps.get('en').split(','), pr = ps.get('ru').split(','), pi = ps.get('im').split(','); w = pe.map((x, k) => { let s = pi[k]||""; if(!s && x) s = `https://tse2.mm.bing.net/th?q=${encodeURIComponent(x+' cartoon clipart')}&w=300&h=300&c=7&rs=1&p=0`; return { en: x, ru: pr[k], im: s }; }); const bg = ps.get('bg'); if(bg) { document.getElementById('bgInput').value = bg; document.getElementById('game-screen').style.backgroundImage = `url(${bg})`; } 
-            
-            const md = ps.get('md');
-            if(md) {
-                document.getElementById('modInput').value = md;
-                document.getElementById('moduleDisplay').innerText = md;
-            }
-
             setBrand();
             document.getElementById('setup-screen').style.display = 'none'; document.getElementById('game-screen').style.display = 'flex'; rL();
         }
