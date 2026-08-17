@@ -89,12 +89,14 @@
         }
         #generated-link {
             width: 100%;
-            padding: 10px;
+            padding: 15px;
             box-sizing: border-box;
             border: 2px solid #ffe69c;
             border-radius: 8px;
             font-family: monospace;
+            font-size: 14px;
             resize: vertical;
+            background: #fff;
         }
 
         /* --- Стили для Плеера (Игровой UI) --- */
@@ -270,13 +272,13 @@
         <div id="questions-list"></div>
 
         <button class="add-btn" onclick="addEditorRow()">+ Добавить еще строку</button>
-        <button class="save-btn" onclick="generateLink()">✨ Сохранить и получить ссылку</button>
+        <button class="save-btn" onclick="generateLink()">✨ Сохранить и получить код для Genially</button>
 
         <div id="link-container" style="display: none;">
-            <p><strong>Готово!</strong> Скопируй ссылку и вставь в Genially (вставка iframe):</p>
+            <p><strong>Готово!</strong> Скопируй этот iframe-код целиком и вставь в Genially (Insert -> Other):</p>
             <textarea id="generated-link" rows="5" readonly onclick="this.select()"></textarea>
             <br>
-            <a id="preview-link" href="#" target="_blank" style="display: inline-block; margin-top: 10px; color: #4facfe; font-weight: bold; text-decoration: none;">▶ Открыть игру в новой вкладке</a>
+            <a id="preview-link" href="#" target="_blank" style="display: inline-block; margin-top: 15px; color: #4facfe; font-weight: bold; text-decoration: none;">▶ Открыть игру в новой вкладке для проверки</a>
         </div>
     </div>
 
@@ -295,7 +297,7 @@
 </div>
 
 <script>
-    // Предзаполненные данные со скриншота (сразу вбиты по умолчанию)
+    // Предзаполненные данные со скриншота
     const defaultData = [
         { condition: 'Разность меньше уменьшаемого на 587.', equation: '[1503] - [587] = 916' },
         { condition: 'Произведение больше первого множителя в 17 раз.', equation: '[125] · [17] = 2125' },
@@ -321,7 +323,6 @@
                 renderEditor(defaultData);
             }
         } else {
-            // Если ссылка чистая (открыт сам файл), показываем редактор с вбитыми примерами
             renderEditor(defaultData);
         }
     }
@@ -372,9 +373,12 @@
         const jsonStr = JSON.stringify(data);
         const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
         const finalUrl = window.location.href.split('#')[0] + '#data=' + b64;
+        
+        // Генерируем готовый код iframe
+        const iframeCode = `<iframe src="${finalUrl}" width="100%" height="700px" frameborder="0" allowfullscreen></iframe>`;
 
         document.getElementById('link-container').style.display = 'block';
-        document.getElementById('generated-link').value = finalUrl;
+        document.getElementById('generated-link').value = iframeCode;
         document.getElementById('preview-link').href = finalUrl;
         
         window.location.hash = '#data=' + b64;
@@ -436,7 +440,6 @@
                         input.className = 'digit-box';
                         input.dataset.answer = char;
                         
-                        // Плавный переход при вводе и удалении (backspace)
                         input.addEventListener('input', function(e) {
                             this.classList.remove('correct', 'incorrect');
                             if (this.value.length === 1) {
@@ -475,9 +478,8 @@
             const userAnswer = input.value.trim();
             const correctAnswer = input.dataset.answer;
             
-            // Сброс анимации, чтобы она проигралась заново при повторном нажатии
             input.classList.remove('correct', 'incorrect');
-            void input.offsetWidth; // Хак для перезапуска CSS-анимации
+            void input.offsetWidth; 
             
             if (userAnswer === correctAnswer) {
                 input.classList.add('correct');
