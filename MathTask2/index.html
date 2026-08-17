@@ -224,16 +224,6 @@
             grid-column: span 2;
             width: 100%;
         }
-
-        .edit-trigger {
-            display: block;
-            margin-top: 10px;
-            color: #7b8c9e;
-            text-decoration: none;
-            font-size: 13px;
-            text-align: center;
-            font-weight: bold;
-        }
     </style>
 </head>
 <body>
@@ -260,14 +250,13 @@
     <!-- ПЛЕЕР -->
     <div id="player-mode" style="display: none;">
         <div id="exercise-container"></div>
-        <a href="#" class="edit-trigger" onclick="forceEditMode(event)">[ Редактировать ]</a>
     </div>
 </div>
 
 <script>
     window.activeCell = null;
 
-    // Данные только с условиями (ответы больше не нужны)
+    // Данные только с условиями
     const defaultData = [
         { condition: 'Найди произведение чисел 672 и 15. Представь его в виде суммы двух одинаковых слагаемых.' },
         { condition: 'Найди частное чисел 55 338 и 69. Представь его в виде разности трёхзначных чисел.' },
@@ -334,7 +323,6 @@
         const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
         const finalUrl = window.location.href.split('#')[0] + '#data=' + b64;
         
-        // Высота iframe теперь меньше, так как нет кнопки "Проверить"
         const iframeCode = `<iframe src="${finalUrl}" width="100%" height="100%" style="min-height: 750px;" frameborder="0" allowfullscreen></iframe>`;
 
         document.getElementById('link-container').style.display = 'block';
@@ -366,16 +354,6 @@
             btn.style.background = '#43e97b';
             btn.style.boxShadow = '0 4px 0 #38c566';
         }, 3000);
-    }
-
-    function forceEditMode(e) {
-        if(e) e.preventDefault();
-        const hash = window.location.hash;
-        if (hash.startsWith('#data=')) {
-            renderEditor(JSON.parse(decodeURIComponent(escape(atob(hash.substring(6))))));
-        } else {
-            renderEditor(defaultData);
-        }
     }
 
     // --- ЛОГИКА ПЛЕЕРА ---
