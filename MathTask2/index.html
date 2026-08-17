@@ -20,6 +20,8 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
+            /* ДОБАВЛЕН ОТСТУП СНИЗУ ДЛЯ ФОНА */
+            padding-bottom: 80px; 
         }
 
         /* --- РЕДАКТОР --- */
@@ -125,7 +127,8 @@
             max-width: 800px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.95);
-            padding: 20px;
+            /* Уменьшен общий отступ */
+            padding: 15px 20px;
             border-radius: 20px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.2);
             border: 4px solid rgba(240, 244, 248, 0.8);
@@ -133,8 +136,9 @@
         }
         
         .task-container {
-            margin-bottom: 25px;
-            padding: 15px;
+            /* Уменьшены отступы для компактности */
+            margin-bottom: 20px;
+            padding: 12px 15px;
             background: rgba(253, 253, 253, 0.9);
             border-radius: 16px;
             border-left: 6px solid #4facfe;
@@ -142,25 +146,33 @@
         }
         
         .task-condition {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             display: flex;
             align-items: flex-start;
             color: #333;
-            line-height: 1.4;
+            line-height: 1.3;
         }
         .task-condition .dot {
             color: #4facfe;
-            font-size: 24px;
-            line-height: 16px;
+            font-size: 20px;
+            line-height: 15px;
             margin-right: 8px;
+        }
+
+        /* НОВАЯ РАСКЛАДКА: ТЕТРАДЬ + КНОПКИ */
+        .work-area {
+            display: flex;
+            align-items: flex-end;
+            gap: 15px;
         }
 
         /* ТЕТРАДЬ В КЛЕТКУ */
         .notebook-wrapper {
+            flex-grow: 1;
             overflow-x: auto;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
         }
         .notebook-grid {
             display: inline-flex;
@@ -173,15 +185,16 @@
             display: flex;
         }
         .cell {
-            width: 28px;
-            height: 28px;
+            /* Чуть уменьшены клеточки */
+            width: 25px;
+            height: 25px;
             border-right: 1px solid #7bc6e8;
             border-bottom: 1px solid #7bc6e8;
             border-top: none;
             border-left: none;
             outline: none;
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-family: 'Courier New', Courier, monospace;
             font-weight: bold;
             color: #0056b3; 
@@ -204,6 +217,40 @@
             background-color: #f8d7da;
             color: #721c24;
             box-shadow: inset 0 0 0 2px #dc3545;
+        }
+
+        /* ПАНЕЛЬ МАТЕМАТИЧЕСКИХ ЗНАКОВ */
+        .symbols-panel {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 5px;
+        }
+        .symbols-panel button {
+            background: #f0f8ff;
+            border: 2px solid #aaddff;
+            color: #007bff;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s;
+            outline: none;
+        }
+        .symbols-panel button:active {
+            transform: scale(0.9);
+            background: #007bff;
+            color: #fff;
+            border-color: #007bff;
+        }
+        .symbols-panel button.btn-wide {
+            grid-column: span 2;
+            width: 100%;
         }
 
         /* КНОПКА ПРОВЕРКИ */
@@ -272,7 +319,10 @@
 </div>
 
 <script>
-    // Предзаполненные данные со всеми возможными перестановками!
+    // Глобальная переменная для отслеживания активной клеточки
+    window.activeCell = null;
+
+    // Предзаполненные данные
     const defaultData = [
         { 
             condition: 'Найди произведение чисел 672 и 15. Представь его в виде суммы двух одинаковых слагаемых.', 
@@ -406,7 +456,6 @@
         const container = document.getElementById('exercise-container');
         container.innerHTML = '';
         
-        // Устанавливаем размер сетки для тетради
         const ROWS = 3;
         const COLS = 22;
 
@@ -415,11 +464,17 @@
             taskDiv.className = 'task-container';
             taskDiv.dataset.answers = item.answers;
 
+            // Условие
             const condDiv = document.createElement('div');
             condDiv.className = 'task-condition';
             condDiv.innerHTML = `<span class="dot">•</span> <span>${item.condition}</span>`;
             taskDiv.appendChild(condDiv);
 
+            // Рабочая зона (Тетрадь + Кнопки)
+            const workArea = document.createElement('div');
+            workArea.className = 'work-area';
+
+            // Блок тетради
             const notebookWrapper = document.createElement('div');
             notebookWrapper.className = 'notebook-wrapper';
 
@@ -436,6 +491,10 @@
                     input.maxLength = 1;
                     input.className = 'cell';
                     
+                    input.addEventListener('focus', function() {
+                        window.activeCell = this;
+                    });
+
                     // Управление стрелочками и автопереход
                     input.addEventListener('keydown', (e) => handleGridNavigation(e, r, c, grid, ROWS, COLS));
                     input.addEventListener('input', function(e) {
@@ -450,7 +509,42 @@
                 grid.appendChild(rowDiv);
             }
             notebookWrapper.appendChild(grid);
-            taskDiv.appendChild(notebookWrapper);
+            workArea.appendChild(notebookWrapper);
+
+            // Блок кнопок математических знаков
+            const symbolsPanel = document.createElement('div');
+            symbolsPanel.className = 'symbols-panel';
+            const symbols = ['+', '−', '·', ':', '=']; // Нужные знаки
+            
+            symbols.forEach(sym => {
+                const btn = document.createElement('button');
+                btn.textContent = sym;
+                if (sym === '=') btn.classList.add('btn-wide'); // Кнопка = будет на всю ширину снизу
+                
+                // Чтобы при клике на кнопку фокус не сбрасывался с клеточки
+                btn.addEventListener('mousedown', (e) => e.preventDefault());
+                
+                btn.addEventListener('click', () => {
+                    let target = window.activeCell;
+                    
+                    // Если ребенок кликнул на знак, но не выбрал клеточку в этом задании
+                    if (!target || !taskDiv.contains(target)) {
+                        const cells = Array.from(taskDiv.querySelectorAll('.cell'));
+                        target = cells.find(c => c.value === ''); // Ищем первую пустую
+                        if (!target) target = cells[cells.length - 1]; // или берем последнюю
+                    }
+                    
+                    if (target) {
+                        target.value = sym;
+                        // Эмулируем ввод, чтобы сработал автопереход на следующую клетку
+                        target.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                });
+                symbolsPanel.appendChild(btn);
+            });
+
+            workArea.appendChild(symbolsPanel);
+            taskDiv.appendChild(workArea);
             container.appendChild(taskDiv);
         });
     }
@@ -469,15 +563,15 @@
         }
     }
 
-    // Нормализация строки (удаляем пробелы, приводим знаки к одному виду)
+    // Нормализация строки
     function normalizeMathString(str) {
         return str.replace(/\s+/g, '')
                   .replace(/\*/g, '·')
                   .replace(/x/gi, '·')
-                  .replace(/х/gi, '·') // Русская буква х
+                  .replace(/х/gi, '·') // Русская х
                   .replace(/:/g, ':')
                   .replace(/\//g, ':')
-                  .replace(/-/g, '−') // Замена обычного дефиса на математический минус
+                  .replace(/-/g, '−')
                   .toLowerCase();
     }
 
@@ -488,7 +582,6 @@
             const rawAnswers = task.dataset.answers;
             if (!rawAnswers) return;
 
-            // Парсим правильные ответы учителя
             const requiredLines = rawAnswers.split('\n')
                 .map(line => line.trim())
                 .filter(line => line !== '')
@@ -496,7 +589,6 @@
 
             const rows = Array.from(task.querySelectorAll('.grid-row'));
             
-            // Собираем то, что написал ученик в каждой строке
             const studentRowsData = rows.map(row => {
                 const inputs = Array.from(row.querySelectorAll('.cell'));
                 const text = inputs.map(inp => inp.value || ' ').join('');
@@ -508,10 +600,8 @@
                 };
             });
 
-            // Очищаем предыдущие результаты
             task.querySelectorAll('.cell').forEach(c => c.classList.remove('correct', 'incorrect'));
 
-            // Проверяем каждую обязательную строку от учителя
             requiredLines.forEach(validOptions => {
                 const match = studentRowsData.find(sRow => !sRow.matched && validOptions.includes(sRow.normalizedText));
                 if (match) {
@@ -522,7 +612,6 @@
                 }
             });
 
-            // Строки с ошибками красим в красный
             studentRowsData.forEach(sRow => {
                 if (!sRow.matched && sRow.normalizedText.length > 0) {
                     sRow.inputs.forEach(inp => {
