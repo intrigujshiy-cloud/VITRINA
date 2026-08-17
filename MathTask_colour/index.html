@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Закрась верные равенства - Конструктор</title>
+    <style>
+        /* Базовые стили */
+        body {
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            background-color: #f4f7f6;
+            transition: background 0.3s;
+        }
+
+        body.player-bg {
+            background-image: url('https://img.genially.com/66f3a31bcd1a12001568ab85/cce83568-9d47-44ec-8078-c96d55f0bab9.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            padding-bottom: 50px; 
+        }
+
+        /* --- РЕДАКТОР --- */
+        #editor-mode {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 2px solid #e0e6ed;
+        }
+        .main-condition-input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 2px solid #4facfe;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+        .editor-row {
+            background: #f8faff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 2px dashed #c1d5ee;
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .editor-row input[type="text"] {
+            width: calc(100% - 40px);
+            padding: 10px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+        }
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #28a745;
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 8px 12px;
+            font-weight: bold;
+        }
+        .add-btn {
+            background: #4facfe;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .save-btn {
+            background: #43e97b;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            width: 100%;
+            box-shadow: 0 4px 0 #38c566;
+            transition: all 0.3s;
+        }
+        .save-btn:active {
+            transform: translateY(4px);
+            box-shadow: none;
+        }
+        #link-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 12px;
+            border: 2px solid #ffe69c;
+        }
+        #generated-link {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 2px solid #ffe69c;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 14px;
+            resize: vertical;
+            background: #fff;
+        }
+
+        /* --- ПЛЕЕР --- */
+        #player-mode {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            border: 4px solid rgba(240, 244, 248, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        .task-header {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            color: #333;
+        }
+        .task-header .dot {
+            color: #4facfe;
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        /* СПИСОК ВЫРАЖЕНИЙ */
+        .expressions-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .expression-box {
+            border: 3px solid #7bc6e8;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 22px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #444;
+            background-color: #fff;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            user-select: none;
+            width: 80%;
+            text-align: center;
+        }
+
+        .expression-box:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(123, 198, 232, 0.3);
+        }
+
+        /* Состояние "Закрашено" */
+        .expression-box.selected {
+            background-color: #aaddff; /* Светло-синяя заливка */
+            border-color: #4facfe;
+            color: #004c8c;
+            transform: scale(1.04);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        /* АНИМАЦИИ ПРОВЕРКИ */
+        @keyframes popSuccess {
+            0% { transform: scale(1.04); }
+            50% { transform: scale(1.1) rotate(2deg); background-color: #d4edda; border-color: #28a745; color: #155724; }
+            100% { transform: scale(1.04) rotate(0deg); background-color: #d4edda; border-color: #28a745; color: #155724; }
+        }
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0) scale(1.04); background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+            20%, 60% { transform: translateX(-6px) scale(1.04); background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+            40%, 80% { transform: translateX(6px) scale(1.04); background-color: #f8d7da; border-color: #dc3545; color: #721c24; }
+        }
+        @keyframes pulseMissed {
+            0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); border-color: #dc3545; }
+            70% { box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); border-color: #dc3545; }
+            100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); border-color: #dc3545; }
+        }
+
+        .expression-box.correct-choice {
+            animation: popSuccess 0.5s ease-out forwards;
+        }
+        .expression-box.wrong-choice {
+            animation: shakeError 0.5s ease-out forwards;
+        }
+        /* Если нужно было закрасить, но ребенок не закрасил */
+        .expression-box.missed-choice {
+            animation: pulseMissed 1.5s infinite;
+            border-width: 4px;
+        }
+
+        /* КНОПКА ПРОВЕРКИ */
+        .check-btn {
+            background: linear-gradient(180deg, #ffca28 0%, #ff8f00 100%);
+            border: none;
+            border-bottom: 6px solid #c56000;
+            color: white;
+            padding: 12px 35px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            display: block;
+            margin: 30px auto 10px auto;
+            transition: all 0.1s;
+            outline: none;
+        }
+        .check-btn:active {
+            transform: translateY(6px);
+            border-bottom: 0px solid #c56000;
+            margin-bottom: 16px;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- РЕДАКТОР -->
+    <div id="editor-mode" style="display: none;">
+        <h2>🖌️ Конструктор: Закрась верное</h2>
+        <input type="text" id="main-condition" class="main-condition-input" placeholder="Общее условие..." value="Закрась верные равенства и неравенства.">
+        <p>Добавь выражения. Отметь галочкой те, которые являются <b>верными</b> (которые ребенок должен закрасить).</p>
+        
+        <div id="expressions-list"></div>
+
+        <button class="add-btn" onclick="addEditorRow()">+ Добавить выражение</button>
+        <button class="save-btn" id="main-save-btn" onclick="generateAndCopyLink()">✨ Сохранить и скопировать iframe для Genially</button>
+
+        <div id="link-container" style="display: none;">
+            <p><strong>Код успешно скопирован!</strong> Вставляй его в Genially (Insert -> Other).</p>
+            <textarea id="generated-link" rows="4" readonly onclick="this.select()"></textarea>
+            <br>
+            <a id="preview-link" href="#" target="_blank" style="display: inline-block; margin-top: 10px; color: #4facfe; font-weight: bold; text-decoration: none;">▶ Открыть игру для проверки</a>
+        </div>
+    </div>
+
+    <!-- ПЛЕЕР -->
+    <div id="player-mode" style="display: none;">
+        <div class="task-header" id="player-condition">
+            <!-- Условие загрузится сюда -->
+        </div>
+        
+        <div class="expressions-container" id="player-expressions">
+            <!-- Выражения загрузятся сюда -->
+        </div>
+
+        <button class="check-btn" onclick="checkAnswers()">Проверить</button>
+    </div>
+</div>
+
+<script>
+    // Предзаполненные данные со скриншота
+    const defaultData = {
+        condition: 'Закрась верные равенства и неравенства.',
+        items: [
+            { text: '16 806 : 3 = 11 658 − 6 398', isCorrect: false },
+            { text: '2 789 + 2 813 < 67 440 : 12', isCorrect: true },
+            { text: '2 · 2 603 = 5 855 − 649', isCorrect: true },
+            { text: '1 867 · 3 < 4 610 + 496', isCorrect: false },
+            { text: '20 640 : 4 < 935 · 6', isCorrect: true }
+        ]
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+        init();
+    });
+
+    function init() {
+        const hash = window.location.hash;
+        if (hash.startsWith('#data=')) {
+            try {
+                const encodedData = hash.substring(6);
+                const jsonStr = decodeURIComponent(escape(atob(encodedData)));
+                renderPlayer(JSON.parse(jsonStr));
+            } catch (e) {
+                renderEditor(defaultData);
+            }
+        } else {
+            renderEditor(defaultData);
+        }
+    }
+
+    function renderEditor(data = null) {
+        document.getElementById('editor-mode').style.display = 'block';
+        document.getElementById('player-mode').style.display = 'none';
+        document.body.classList.remove('player-bg');
+        
+        const list = document.getElementById('expressions-list');
+        list.innerHTML = '';
+
+        if (data && data.items && data.items.length > 0) {
+            document.getElementById('main-condition').value = data.condition;
+            data.items.forEach(item => addEditorRow(item.text, item.isCorrect));
+        } else {
+            addEditorRow();
+        }
+    }
+
+    function addEditorRow(text = '', isCorrect = false) {
+        const list = document.getElementById('expressions-list');
+        const row = document.createElement('div');
+        row.className = 'editor-row';
+        
+        const checkedAttr = isCorrect ? 'checked' : '';
+        
+        row.innerHTML = `
+            <button class="delete-btn" onclick="this.parentElement.remove()">✕</button>
+            <input type="text" class="inp-text" placeholder="Уравнение или неравенство..." value="${text}">
+            <label class="checkbox-label">
+                <input type="checkbox" class="inp-correct" ${checkedAttr}>
+                Это ВЕРНОЕ равенство/неравенство (нужно закрасить)
+            </label>
+        `;
+        list.appendChild(row);
+    }
+
+    async function generateAndCopyLink() {
+        const condition = document.getElementById('main-condition').value.trim();
+        const rows = document.querySelectorAll('.editor-row');
+        const items = [];
+        
+        rows.forEach(row => {
+            const text = row.querySelector('.inp-text').value.trim();
+            const isCorrect = row.querySelector('.inp-correct').checked;
+            if (text) {
+                items.push({ text, isCorrect });
+            }
+        });
+
+        if (items.length === 0) {
+            alert("Добавь хотя бы одно выражение!");
+            return;
+        }
+
+        const data = { condition, items };
+        const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+        const finalUrl = window.location.href.split('#')[0] + '#data=' + b64;
+        
+        const iframeCode = `<iframe src="${finalUrl}" width="100%" height="100%" style="min-height: 700px;" frameborder="0" allowfullscreen></iframe>`;
+
+        document.getElementById('link-container').style.display = 'block';
+        const linkInput = document.getElementById('generated-link');
+        linkInput.value = iframeCode;
+        document.getElementById('preview-link').href = finalUrl;
+        
+        window.location.hash = '#data=' + b64;
+
+        const btn = document.getElementById('main-save-btn');
+        const originalText = "✨ Сохранить и скопировать iframe для Genially";
+        
+        try {
+            await navigator.clipboard.writeText(iframeCode);
+            showSuccessButton(btn, originalText);
+        } catch (err) {
+            linkInput.select();
+            document.execCommand("copy");
+            showSuccessButton(btn, originalText);
+        }
+    }
+
+    function showSuccessButton(btn, originalText) {
+        btn.innerHTML = '✅ Код скопирован!';
+        btn.style.background = '#2ed573';
+        btn.style.boxShadow = '0 4px 0 #26b360';
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = '#43e97b';
+            btn.style.boxShadow = '0 4px 0 #38c566';
+        }, 3000);
+    }
+
+    // --- ЛОГИКА ПЛЕЕРА ---
+    function renderPlayer(data) {
+        document.getElementById('editor-mode').style.display = 'none';
+        document.getElementById('player-mode').style.display = 'block';
+        document.body.classList.add('player-bg'); 
+
+        document.getElementById('player-condition').innerHTML = `<span class="dot">•</span> <span>${data.condition}</span>`;
+
+        const container = document.getElementById('player-expressions');
+        container.innerHTML = '';
+
+        data.items.forEach(item => {
+            const box = document.createElement('div');
+            box.className = 'expression-box';
+            box.textContent = item.text;
+            box.dataset.isCorrect = item.isCorrect;
+
+            // Логика клика (закрашивание)
+            box.addEventListener('click', function() {
+                // Убираем классы проверки, если они были
+                this.classList.remove('correct-choice', 'wrong-choice', 'missed-choice');
+                
+                // Переключаем класс закрашивания
+                this.classList.toggle('selected');
+            });
+
+            container.appendChild(box);
+        });
+    }
+
+    function checkAnswers() {
+        const boxes = document.querySelectorAll('.expression-box');
+        
+        boxes.forEach(box => {
+            // Очищаем предыдущую проверку
+            box.classList.remove('correct-choice', 'wrong-choice', 'missed-choice');
+            void box.offsetWidth; // Хак для перезапуска CSS-анимации
+
+            const isSelected = box.classList.contains('selected');
+            const shouldBeSelected = box.dataset.isCorrect === 'true';
+
+            if (isSelected && shouldBeSelected) {
+                // Закрасил правильно
+                box.classList.add('correct-choice');
+            } else if (isSelected && !shouldBeSelected) {
+                // Закрасил лишнее
+                box.classList.add('wrong-choice');
+            } else if (!isSelected && shouldBeSelected) {
+                // Забыл закрасить нужное
+                box.classList.add('missed-choice');
+            }
+            // Если !isSelected && !shouldBeSelected — ничего не делаем (молодец, что не тронул)
+        });
+    }
+</script>
+</body>
+</html>
