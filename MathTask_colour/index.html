@@ -434,7 +434,7 @@
 
     function checkAnswers() {
         const boxes = document.querySelectorAll('.expression-box');
-        let allPerfect = true; // Флаг для салюта
+        let allPerfect = true; 
         
         boxes.forEach(box => {
             box.classList.remove('correct-choice', 'wrong-choice', 'missed-choice');
@@ -454,15 +454,13 @@
             }
         });
 
-        // Если все решено верно - запускаем салют!
         if (allPerfect) {
             startFireworks();
         }
     }
 
-    // --- ЛОГИКА САЛЮТА ---
+    // --- ЛОГИКА САЛЮТА (МАСШТАБНЫЙ И ЯРКИЙ) ---
     function startFireworks() {
-        // Если салют уже идет, не запускаем второй
         if(document.getElementById('fireworks-canvas')) return;
 
         const canvas = document.createElement('canvas');
@@ -472,7 +470,7 @@
         canvas.style.left = '0';
         canvas.style.width = '100vw';
         canvas.style.height = '100vh';
-        canvas.style.pointerEvents = 'none'; // Чтобы не мешал кликать по экрану
+        canvas.style.pointerEvents = 'none'; 
         canvas.style.zIndex = '9999';
         document.body.appendChild(canvas);
 
@@ -486,14 +484,20 @@
         });
 
         const particles = [];
-        const colors = ['#ff4fac', '#f7b733', '#4facfe', '#00f2fe', '#a18cd1', '#ff4757', '#2ed573', '#ffca28'];
+        // Очень яркие, неоновые цвета
+        const colors = ['#ff007f', '#ffaa00', '#00ffcc', '#007fff', '#aa00ff', '#ff003c', '#00ff00', '#ffff00'];
 
-        // Функция создания одного взрыва
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255,255,255';
+        }
+
+        // Функция мощного взрыва
         function explode(x, y) {
-            const count = 50 + Math.random() * 40;
+            const count = 100 + Math.random() * 50; // От 100 до 150 частиц на один взрыв!
             for (let i = 0; i < count; i++) {
                 const angle = Math.random() * Math.PI * 2;
-                const speed = Math.random() * 7 + 2;
+                const speed = Math.random() * 12 + 4; // Широкий разлет
                 particles.push({
                     x: x,
                     y: y,
@@ -501,28 +505,21 @@
                     vy: Math.sin(angle) * speed,
                     color: colors[Math.floor(Math.random() * colors.length)],
                     alpha: 1,
-                    decay: Math.random() * 0.015 + 0.015,
-                    size: Math.random() * 3 + 2
+                    decay: Math.random() * 0.01 + 0.01, // Затухают медленнее
+                    size: Math.random() * 4 + 2 // Крупнее
                 });
             }
         }
 
         let shoots = 0;
-        const maxShoots = 6; // Количество залпов
+        const maxShoots = 10; // 10 залпов!
 
-        // Запускаем залпы по таймеру
         const shootInterval = setInterval(() => {
-            explode(width * 0.2 + Math.random() * width * 0.6, height * 0.1 + Math.random() * height * 0.4);
+            explode(width * 0.1 + Math.random() * width * 0.8, height * 0.1 + Math.random() * height * 0.5);
             shoots++;
             if (shoots >= maxShoots) clearInterval(shootInterval);
-        }, 400);
+        }, 250); // Стреляют чаще
 
-        function hexToRgb(hex) {
-            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255,255,255';
-        }
-
-        // Отрисовка кадров
         function animate() {
             ctx.clearRect(0, 0, width, height);
             
@@ -534,22 +531,27 @@
                 
                 activeParticles = true;
 
-                p.vy += 0.05; // Гравитация (тянет вниз)
+                p.vy += 0.08; // Гравитация
                 p.x += p.vx;
                 p.y += p.vy;
-                p.alpha -= p.decay; // Затухание
+                p.alpha -= p.decay;
 
+                // 1. Ореол свечения (полупрозрачный, большой)
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${hexToRgb(p.color)}, ${p.alpha * 0.4})`;
+                ctx.fill();
+
+                // 2. Яркое белое ядро внутри
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(${hexToRgb(p.color)}, ${p.alpha})`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
                 ctx.fill();
             }
 
-            // Пока есть залпы или видимые частицы - крутим анимацию
             if (shoots < maxShoots || activeParticles) {
                 requestAnimationFrame(animate);
             } else {
-                // Как только всё потухло - удаляем холст
                 canvas.remove();
             }
         }
