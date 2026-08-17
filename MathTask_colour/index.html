@@ -192,7 +192,7 @@
 
         /* Состояние "Закрашено" */
         .expression-box.selected {
-            background-color: #aaddff; /* Светло-синяя заливка */
+            background-color: #aaddff; 
             border-color: #4facfe;
             color: #004c8c;
             transform: scale(1.04);
@@ -222,7 +222,6 @@
         .expression-box.wrong-choice {
             animation: shakeError 0.5s ease-out forwards;
         }
-        /* Если нужно было закрасить, но ребенок не закрасил */
         .expression-box.missed-choice {
             animation: pulseMissed 1.5s infinite;
             border-width: 4px;
@@ -279,20 +278,15 @@
 
     <!-- ПЛЕЕР -->
     <div id="player-mode" style="display: none;">
-        <div class="task-header" id="player-condition">
-            <!-- Условие загрузится сюда -->
-        </div>
+        <div class="task-header" id="player-condition"></div>
         
-        <div class="expressions-container" id="player-expressions">
-            <!-- Выражения загрузятся сюда -->
-        </div>
+        <div class="expressions-container" id="player-expressions"></div>
 
         <button class="check-btn" onclick="checkAnswers()">Проверить</button>
     </div>
 </div>
 
 <script>
-    // Предзаполненные данные со скриншота
     const defaultData = {
         condition: 'Закрась верные равенства и неравенства.',
         items: [
@@ -429,12 +423,8 @@
             box.textContent = item.text;
             box.dataset.isCorrect = item.isCorrect;
 
-            // Логика клика (закрашивание)
             box.addEventListener('click', function() {
-                // Убираем классы проверки, если они были
                 this.classList.remove('correct-choice', 'wrong-choice', 'missed-choice');
-                
-                // Переключаем класс закрашивания
                 this.classList.toggle('selected');
             });
 
@@ -444,27 +434,127 @@
 
     function checkAnswers() {
         const boxes = document.querySelectorAll('.expression-box');
+        let allPerfect = true; // Флаг для салюта
         
         boxes.forEach(box => {
-            // Очищаем предыдущую проверку
             box.classList.remove('correct-choice', 'wrong-choice', 'missed-choice');
-            void box.offsetWidth; // Хак для перезапуска CSS-анимации
+            void box.offsetWidth; 
 
             const isSelected = box.classList.contains('selected');
             const shouldBeSelected = box.dataset.isCorrect === 'true';
 
             if (isSelected && shouldBeSelected) {
-                // Закрасил правильно
                 box.classList.add('correct-choice');
             } else if (isSelected && !shouldBeSelected) {
-                // Закрасил лишнее
                 box.classList.add('wrong-choice');
+                allPerfect = false;
             } else if (!isSelected && shouldBeSelected) {
-                // Забыл закрасить нужное
                 box.classList.add('missed-choice');
+                allPerfect = false;
             }
-            // Если !isSelected && !shouldBeSelected — ничего не делаем (молодец, что не тронул)
         });
+
+        // Если все решено верно - запускаем салют!
+        if (allPerfect) {
+            startFireworks();
+        }
+    }
+
+    // --- ЛОГИКА САЛЮТА ---
+    function startFireworks() {
+        // Если салют уже идет, не запускаем второй
+        if(document.getElementById('fireworks-canvas')) return;
+
+        const canvas = document.createElement('canvas');
+        canvas.id = 'fireworks-canvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none'; // Чтобы не мешал кликать по экрану
+        canvas.style.zIndex = '9999';
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const particles = [];
+        const colors = ['#ff4fac', '#f7b733', '#4facfe', '#00f2fe', '#a18cd1', '#ff4757', '#2ed573', '#ffca28'];
+
+        // Функция создания одного взрыва
+        function explode(x, y) {
+            const count = 50 + Math.random() * 40;
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 7 + 2;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.015,
+                    size: Math.random() * 3 + 2
+                });
+            }
+        }
+
+        let shoots = 0;
+        const maxShoots = 6; // Количество залпов
+
+        // Запускаем залпы по таймеру
+        const shootInterval = setInterval(() => {
+            explode(width * 0.2 + Math.random() * width * 0.6, height * 0.1 + Math.random() * height * 0.4);
+            shoots++;
+            if (shoots >= maxShoots) clearInterval(shootInterval);
+        }, 400);
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : '255,255,255';
+        }
+
+        // Отрисовка кадров
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            
+            let activeParticles = false;
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+                if (p.alpha <= 0) continue;
+                
+                activeParticles = true;
+
+                p.vy += 0.05; // Гравитация (тянет вниз)
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay; // Затухание
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${hexToRgb(p.color)}, ${p.alpha})`;
+                ctx.fill();
+            }
+
+            // Пока есть залпы или видимые частицы - крутим анимацию
+            if (shoots < maxShoots || activeParticles) {
+                requestAnimationFrame(animate);
+            } else {
+                // Как только всё потухло - удаляем холст
+                canvas.remove();
+            }
+        }
+
+        animate();
     }
 </script>
 </body>
