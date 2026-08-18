@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Генератор визуальных переходов (PRO Версия)</title>
+  <style>
+    :root {
+      --bg-main: #0d0d14; --bg-panel: #161622; --accent-cyan: #00e5ff;
+      --accent-purple: #8a2be2; --text-main: #ffffff; --text-muted: #888899;
+      --border-color: #2a2a35;
+    }
+
+    body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+    #sidebar { width: 400px; background-color: var(--bg-panel); padding: 20px; box-shadow: 2px 0 15px rgba(0,0,0,0.8); z-index: 10; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; border-right: 1px solid var(--border-color); }
+    #sidebar::-webkit-scrollbar { width: 6px; }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+    h2 { margin: 0; font-size: 15px; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
+
+    .control-group { display: flex; flex-direction: column; gap: 8px; }
+    label { font-size: 13px; font-weight: 600; color: #ccc; }
+    
+    input[type="range"] { -webkit-appearance: none; width: 100%; background: var(--border-color); height: 4px; border-radius: 2px; outline: none; }
+    input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-cyan); cursor: pointer; }
+
+    input[type="text"], input[type="file"], select, input[type="color"] { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-main); color: white; box-sizing: border-box; font-size: 13px; }
+
+    .radio-list { display: flex; flex-direction: column; gap: 10px; }
+    .radio-item { display: flex; align-items: center; justify-content: space-between; }
+    .radio-label { display: flex; align-items: center; gap: 10px; font-size: 13px; cursor: pointer; }
+    .radio-label input[type="radio"], .checkbox-label input[type="checkbox"] { display: none; }
+    
+    .custom-radio, .custom-checkbox { width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; display: flex; justify-content: center; align-items: center; transition: 0.2s; }
+    .custom-checkbox { border-radius: 4px; }
+    
+    .radio-label input[type="radio"]:checked + .custom-radio, .checkbox-label input[type="checkbox"]:checked + .custom-checkbox { border-color: var(--accent-cyan); }
+    .radio-label input[type="radio"]:checked + .custom-radio::after { content: ''; width: 8px; height: 8px; background: var(--accent-cyan); border-radius: 50%; }
+    .checkbox-label input[type="checkbox"]:checked + .custom-checkbox::after { content: '✔'; font-size: 12px; color: var(--accent-cyan); }
+
+    .play-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--accent-purple); background: transparent; color: var(--accent-purple); display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 10px; padding-left: 2px; }
+    .play-btn:hover { background: var(--accent-purple); color: white; }
+
+    .export-btn { background-color: var(--accent-cyan); color: #000; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-weight: bold; text-transform: uppercase; margin-top: 5px; transition: 0.2s; }
+    .export-btn:hover { background-color: #00b3cc; }
+
+    #preview-container { flex: 1; position: relative; background-color: #222; background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px; background-position: center; overflow: hidden; }
+
+    #export-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; justify-content: center; align-items: center; }
+    #export-content { background: var(--bg-panel); padding: 25px; border-radius: 10px; width: 600px; max-width: 90%; border: 1px solid var(--accent-cyan); }
+    textarea { width: 100%; height: 250px; background: var(--bg-main); color: var(--accent-cyan); border: 1px solid var(--border-color); padding: 10px; font-family: monospace; border-radius: 6px; resize: vertical; box-sizing: border-box; margin: 15px 0; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    .btn-copy { background-color: var(--accent-cyan); color: #000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-close { background-color: transparent; color: white; border: 1px solid var(--border-color); padding: 10px 20px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div id="sidebar">
+    
+    <div class="control-group">
+      <h2>Загрузочная рыбка (Со шлейфом)</h2>
+      <label class="checkbox-label" style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="fishToggle">
+        <div class="custom-checkbox"></div> Включить рыбку-индикатор
+      </label>
+      <div id="fishSettings" style="display:none; flex-direction:column; gap:8px; margin-top:10px; padding-left:10px; border-left: 2px solid var(--border-color);">
+        <div class="radio-list">
+          <div class="radio-item"><label class="radio-label"><input type="radio" name="fishType" value="emoji" checked><div class="custom-radio"></div>1. Стандартная (🐟)</label></div>
+          <div class="radio-item"><label class="radio-label"><input type="radio" name="fishType" value="url"><div class="custom-radio"></div>2. По ссылке (URL)</label></div>
+          <input type="text" id="fishUrlInput" placeholder="https://..." style="display:none; margin-left:26px; width:calc(100% - 26px);">
+          <div class="radio-item"><label class="radio-label"><input type="radio" name="fishType" value="file"><div class="custom-radio"></div>3. Загрузить картинку</label></div>
+          <input type="file" id="fishFileInput" accept="image/*" style="display:none; margin-left:26px; width:calc(100% - 26px);">
+        </div>
+        <label style="margin-top: 5px;">Размер рыбки: <span id="fishSizeVal">80</span>px</label>
+        <input type="range" id="fishSize" min="20" max="300" value="80">
+        <label style="margin-top: 5px;">Время заплыва: <span id="fishDurVal">3</span> сек.</label>
+        <input type="range" id="fishDuration" min="1" max="10" value="3">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h2>Вид объектов (Фон)</h2>
+      <div class="radio-list">
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="glass-bubble" checked><div class="custom-radio"></div>1. Стеклянный пузырек</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="bubbles"><div class="custom-radio"></div>2. Обычные пузырьки</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="hearts"><div class="custom-radio"></div>3. Сердечки (❤️)</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="stars"><div class="custom-radio"></div>4. Звездочки (⭐)</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="fireflies"><div class="custom-radio"></div>5. Светлячки</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="custom-url"><div class="custom-radio"></div>6. Своя картинка (URL)</label></div>
+        <input type="text" id="customUrlInput" placeholder="https://..." style="display:none; margin-left:26px; width:calc(100% - 26px);">
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="particleType" value="custom-file"><div class="custom-radio"></div>7. Загрузить с компьютера</label></div>
+        <input type="file" id="customFileInput" accept="image/*" style="display:none; margin-left:26px; width:calc(100% - 26px);">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h2>Параметры анимации</h2>
+      
+      <label>Направление движения:</label>
+      <select id="particleDir">
+        <option value="up" selected>1. Вверх</option>
+        <option value="down">2. Вниз</option>
+        <option value="left">3. Влево</option>
+        <option value="right">4. Вправо</option>
+        <option value="center-out">5. Из центра наружу</option>
+        <option value="center-in">6. Снаружи в центр</option>
+        <option value="diag-ur">7. Диагональ (Вправо-Вверх)</option>
+        <option value="diag-ul">8. Диагональ (Влево-Вверх)</option>
+        <option value="diag-dr">9. Диагональ (Вправо-Вниз)</option>
+        <option value="diag-dl">10. Диагональ (Влево-Вниз)</option>
+      </select>
+
+      <label style="margin-top: 5px;">Количество: <span id="countVal">30</span></label>
+      <input type="range" id="particleCount" min="5" max="100" value="30">
+      
+      <label style="margin-top: 5px;">Базовый размер: <span id="sizeVal">40</span>px</label>
+      <input type="range" id="particleSize" min="10" max="150" value="40">
+
+      <label style="margin-top: 5px;">Скорость анимации:</label>
+      <select id="particleSpeed">
+        <option value="slow">Медленно</option>
+        <option value="normal" selected>Нормально</option>
+        <option value="fast">Быстро</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <h2>Библиотека звуков</h2>
+      <div class="radio-list">
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="soundType" value="none" checked><div class="custom-radio"></div>0. Без звука</label></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="soundType" value="bubbles"><div class="custom-radio"></div>1. Бульки (глубокие)</label><button class="play-btn" data-sound="bubbles">▶</button></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="soundType" value="magic"><div class="custom-radio"></div>2. Магический дзинь</label><button class="play-btn" data-sound="magic">▶</button></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="soundType" value="pop"><div class="custom-radio"></div>3. Звонкий поп</label><button class="play-btn" data-sound="pop">▶</button></div>
+        <div class="radio-item"><label class="radio-label"><input type="radio" name="soundType" value="custom"><div class="custom-radio"></div>4. Свой звук (URL)</label></div>
+        <input type="text" id="customSoundUrl" placeholder="Ссылка на .mp3" style="display:none; margin-left:26px; width:calc(100% - 26px);">
+      </div>
+    </div>
+
+    <div class="control-group">
+      <h2>Фон (Цвет / Картинка)</h2>
+      <label>Цвет фона:</label>
+      <input type="color" id="bgColor" value="#222222">
+      <label style="margin-top:5px;">Своя картинка фона:</label>
+      <input type="file" id="bgImage" accept="image/*">
+    </div>
+
+    <div class="control-group" style="margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+      <h2>Настройки экспорта</h2>
+      <label class="checkbox-label" style="display:flex; align-items:center; gap:10px;">
+        <input type="checkbox" id="exportBgToggle">
+        <div class="custom-checkbox"></div> Сохранить фон в коде (иначе прозрачный)
+      </label>
+    </div>
+
+    <button id="exportBtn" class="export-btn">Сгенерировать код</button>
+  </div>
+
+  <div id="preview-container"></div>
+
+  <div id="export-modal">
+    <div id="export-content">
+      <h2 style="border:none; margin-bottom: 5px;">ВАШ КОД ГОТОВ</h2>
+      <p style="font-size:13px; color:var(--text-muted); margin-top:0;">Скопируйте и вставьте этот код в Genially.</p>
+      <textarea id="codeOutput" readonly></textarea>
+      <div class="modal-actions">
+        <button id="closeBtn" class="btn-close">Закрыть</button>
+        <button id="copyBtn" class="btn-copy">Скопировать код</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let config = {
+      type: 'glass-bubble', count: 30, size: 40, speed: 'normal', dir: 'up', sound: 'none', customImgBase64: '', customImgUrl: '', customSoundUrl: '',
+      fishEnabled: false, fishType: 'emoji', fishUrl: '', fishBase64: '', fishDuration: 3, fishSize: 80,
+      bgColor: '#222222', bgImage: '', exportBg: false
+    };
+
+    const previewContainer = document.getElementById('preview-container');
+    
+    // UI Events: Рыбка
+    document.getElementById('fishToggle').addEventListener('change', (e) => { config.fishEnabled = e.target.checked; document.getElementById('fishSettings').style.display = config.fishEnabled ? 'flex' : 'none'; updatePreview(); });
+    document.querySelectorAll('input[name="fishType"]').forEach(radio => { radio.addEventListener('change', (e) => { config.fishType = e.target.value; document.getElementById('fishUrlInput').style.display = config.fishType === 'url' ? 'block' : 'none'; document.getElementById('fishFileInput').style.display = config.fishType === 'file' ? 'block' : 'none'; updatePreview(); }); });
+    document.getElementById('fishDuration').addEventListener('input', (e) => { config.fishDuration = parseInt(e.target.value); document.getElementById('fishDurVal').textContent = config.fishDuration; updatePreview(); });
+    document.getElementById('fishSize').addEventListener('input', (e) => { config.fishSize = parseInt(e.target.value); document.getElementById('fishSizeVal').textContent = config.fishSize; updatePreview(); });
+    document.getElementById('fishUrlInput').addEventListener('input', (e) => { config.fishUrl = e.target.value; updatePreview(); });
+    document.getElementById('fishFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image(); img.onload = function() {
+          const canvas = document.createElement('canvas'); const MAX_SIZE = 250;
+          let width = img.width; let height = img.height;
+          if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+          config.fishBase64 = canvas.toDataURL('image/png'); updatePreview();
+        }; img.src = event.target.result;
+      }; reader.readAsDataURL(file);
+    });
+
+    // UI Events: Частицы и Настройки
+    document.querySelectorAll('input[name="particleType"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        config.type = e.target.value;
+        document.getElementById('customUrlInput').style.display = config.type === 'custom-url' ? 'block' : 'none';
+        document.getElementById('customFileInput').style.display = config.type === 'custom-file' ? 'block' : 'none'; updatePreview();
+      });
+    });
+    document.getElementById('particleDir').addEventListener('change', (e) => { config.dir = e.target.value; updatePreview(); });
+    document.querySelectorAll('input[name="soundType"]').forEach(radio => { radio.addEventListener('change', (e) => { config.sound = e.target.value; document.getElementById('customSoundUrl').style.display = config.sound === 'custom' ? 'block' : 'none'; updatePreview(); }); });
+    document.getElementById('particleCount').addEventListener('input', (e) => { config.count = parseInt(e.target.value); document.getElementById('countVal').textContent = config.count; updatePreview(); });
+    document.getElementById('particleSize').addEventListener('input', (e) => { config.size = parseInt(e.target.value); document.getElementById('sizeVal').textContent = config.size; updatePreview(); });
+    document.getElementById('particleSpeed').addEventListener('change', (e) => { config.speed = e.target.value; updatePreview(); });
+    document.getElementById('customUrlInput').addEventListener('input', (e) => { config.customImgUrl = e.target.value; updatePreview(); });
+    document.getElementById('customSoundUrl').addEventListener('input', (e) => { config.customSoundUrl = e.target.value; updatePreview(); });
+    
+    // Экспорт Фона
+    document.getElementById('exportBgToggle').addEventListener('change', (e) => { config.exportBg = e.target.checked; updatePreview(); });
+    
+    document.getElementById('bgColor').addEventListener('input', (e) => { 
+      config.bgColor = e.target.value; 
+      previewContainer.style.backgroundColor = config.bgColor; 
+      previewContainer.style.backgroundImage = 'none'; 
+      config.bgImage = '';
+      updatePreview(); 
+    });
+    document.getElementById('bgImage').addEventListener('change', (e) => {
+      const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = function(event) { 
+        config.bgImage = event.target.result;
+        previewContainer.style.backgroundImage = `url(${config.bgImage})`; 
+        previewContainer.style.backgroundColor = 'transparent'; 
+        previewContainer.style.backgroundSize = 'cover'; 
+        updatePreview();
+      }; reader.readAsDataURL(file); }
+    });
+    document.getElementById('customFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const img = new Image(); img.onload = function() {
+          const canvas = document.createElement('canvas'); const MAX_SIZE = 200;
+          let width = img.width; let height = img.height;
+          if (width > height && width > MAX_SIZE) { height *= MAX_SIZE / width; width = MAX_SIZE; } else if (height > MAX_SIZE) { width *= MAX_SIZE / height; height = MAX_SIZE; }
+          canvas.width = width; canvas.height = height; const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, width, height);
+          config.customImgBase64 = canvas.toDataURL('image/png'); updatePreview();
+        }; img.src = event.target.result;
+      }; reader.readAsDataURL(file);
+    });
+
+    let audioCtx = null;
+    function playSoundEffect(type) {
+      if (type === 'none') return;
+      if (type === 'custom') { if(config.customSoundUrl) new Audio(config.customSoundUrl).play().catch(()=>{}); return; }
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+      osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
+      if (type === 'bubbles') { osc.type = 'sine'; osc.frequency.setValueAtTime(300 + Math.random()*200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3); gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3); osc.start(now); osc.stop(now + 0.3); } 
+      else if (type === 'magic') { osc.type = 'triangle'; osc.frequency.setValueAtTime(800 + Math.random()*800, now); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6); osc.start(now); osc.stop(now + 0.6); } 
+      else if (type === 'pop') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.3, now + 0.02); gain.gain.linearRampToValueAtTime(0, now + 0.15); osc.start(now); osc.stop(now + 0.15); }
+    }
+    document.querySelectorAll('.play-btn').forEach(btn => { btn.addEventListener('click', (e) => { e.preventDefault(); playSoundEffect(e.target.dataset.sound); }); });
+
+    // --- GENERATORS ---
+    function getGeneratedCSS() {
+      let customBg = config.type === 'custom-url' ? config.customImgUrl : config.customImgBase64;
+      
+      let bodyBgCSS = 'background: transparent !important;';
+      if (config.exportBg) {
+         if (config.bgImage) bodyBgCSS = `background-image: url('${config.bgImage}') !important; background-size: cover; background-position: center; background-color: transparent !important;`;
+         else bodyBgCSS = `background-color: ${config.bgColor} !important; background-image: none !important;`;
+      }
+
+      return `
+      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; ${bodyBgCSS} }
+      
+      .particle-wrapper { position: absolute; opacity: 0; user-select: none; }
+      .particle { display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; }
+      
+      .glass-bubble { border: 2px solid rgba(255, 255, 255, 0.9); border-radius: 50%; background: rgba(255, 255, 255, 0.2); box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.4); }
+      .glass-bubble::after { content: ''; position: absolute; top: 18%; left: 22%; width: 28%; height: 28%; background: rgba(255, 255, 255, 0.95); border-radius: 50%; }
+      .bubbles { background: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.1)); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 50%; box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.3); }
+      .fireflies { background: #eaff00; border-radius: 50%; box-shadow: 0 0 10px #eaff00, 0 0 20px #eaff00; }
+      .custom-img { background-image: url('${customBg}'); background-size: contain; background-repeat: no-repeat; background-position: center; }
+
+      .loading-fish-container { position: absolute; z-index: 1000; transition: opacity 0.5s ease; }
+      .loading-fish-img { width: ${config.fishSize}px; height: auto; object-fit: contain; }
+      
+      .fish-sparkle { position: absolute; background: #fff; border-radius: 50%; box-shadow: 0 0 6px #fff, 0 0 12px #00e5ff; pointer-events: none; z-index: 999; animation: sparkleFade 0.8s ease-out forwards; }
+
+      /* Динамическое движение на CSS переменных */
+      @keyframes moveParticle { 
+          0% { left: var(--startX); top: var(--startY); opacity: 0; transform: scale(0.8); } 
+          15% { opacity: 1; } 85% { opacity: 1; } 
+          100% { left: var(--endX); top: var(--endY); opacity: 0; transform: scale(1.2); } 
+      }
+      
+      @keyframes sway { 0% { transform: translateX(0px) rotate(-10deg); } 100% { transform: translateX(40px) rotate(10deg); } }
+      @keyframes pulse { 0% { transform: scale(0.8); opacity: 0.5; } 100% { transform: scale(1.5); opacity: 1; } }
+      @keyframes sparkleFade { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0.1) translateY(30px); opacity: 0; } }
+      `;
+    }
+
+    function getGeneratedJS() {
+      return `
+      (function() {
+        const container = document.body;
+        
+        // --- 1. ЛОГИКА РЫБКИ СО ШЛЕЙФОМ ---
+        const fishEnabled = ${config.fishEnabled};
+        if (fishEnabled) {
+          const fishCont = document.createElement('div'); fishCont.className = 'loading-fish-container';
+          const fishImg = document.createElement('img'); fishImg.className = 'loading-fish-img';
+          let fishSrcType = '${config.fishType}';
+          let defaultEmoji = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🐟</text></svg>';
+          
+          if (fishSrcType === 'emoji') fishImg.src = defaultEmoji;
+          else if (fishSrcType === 'url') fishImg.src = '${config.fishUrl}' || defaultEmoji;
+          else if (fishSrcType === 'file') fishImg.src = '${config.fishBase64}' || defaultEmoji;
+          
+          fishCont.appendChild(fishImg); container.appendChild(fishCont);
+
+          const durationMs = ${config.fishDuration} * 1000;
+          const start = performance.now();
+          let lastSparkle = 0;
+          
+          function animateFish(time) {
+            let elapsed = time - start; let progress = elapsed / durationMs; let isFinished = false;
+            if (progress >= 1) { progress = 1; isFinished = true; }
+            
+            let vw = window.innerWidth; let vh = window.innerHeight;
+            let fishSize = ${config.fishSize};
+            
+            // X: Выплывает из-за левого края и уходит за правый
+            let xPos = -(fishSize * 2) + progress * (vw + fishSize * 4); 
+            // Y: По центру с волной
+            let yPos = (vh / 2 - fishSize / 2) + Math.sin(time * 0.005) * 40;
+            
+            fishCont.style.left = xPos + 'px';
+            fishCont.style.top = yPos + 'px';
+            
+            // Генерация искристого шлейфа
+            if (time - lastSparkle > 40 && !isFinished) {
+               let spark = document.createElement('div');
+               spark.className = 'fish-sparkle';
+               let sparkSize = Math.random() * 6 + 2;
+               spark.style.width = sparkSize + 'px'; spark.style.height = sparkSize + 'px';
+               // Искры появляются позади рыбки (слева от нее)
+               spark.style.left = (xPos + Math.random()*20) + 'px';
+               spark.style.top = (yPos + fishSize/2 + Math.random()*40 - 20) + 'px';
+               container.appendChild(spark);
+               setTimeout(() => spark.remove(), 800);
+               lastSparkle = time;
+            }
+            
+            if (!isFinished) requestAnimationFrame(animateFish);
+            else { fishCont.style.opacity = '0'; setTimeout(function(){ fishCont.remove(); }, 500); }
+          }
+          requestAnimationFrame(animateFish);
+        }
+
+        // --- 2. ЛОГИКА 10 НАПРАВЛЕНИЙ ЧАСТИЦ ---
+        const type = '${config.type}'; const count = ${config.count}; const baseSize = ${config.size}; 
+        const speed = '${config.speed}'; const dir = '${config.dir}';
+        const soundType = '${config.sound}'; const customSoundUrl = '${config.customSoundUrl}';
+        
+        let audioCtx = null;
+        function playSnd() {
+          if (soundType === 'none') return;
+          if (soundType === 'custom' && customSoundUrl) { new Audio(customSoundUrl).play().catch(()=>{}); return; }
+          if (!audioCtx) { const AudioContext = window.AudioContext || window.webkitAudioContext; if (!AudioContext) return; audioCtx = new AudioContext(); }
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); const now = audioCtx.currentTime;
+          if (soundType === 'bubbles') { osc.type = 'sine'; osc.frequency.setValueAtTime(300 + Math.random()*200, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.3); gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3); osc.start(now); osc.stop(now + 0.3); } 
+          else if (soundType === 'magic') { osc.type = 'triangle'; osc.frequency.setValueAtTime(800 + Math.random()*800, now); gain.gain.setValueAtTime(0.05, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6); osc.start(now); osc.stop(now + 0.6); } 
+          else if (soundType === 'pop') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0, now); gain.gain.linearRampToValueAtTime(0.1, now + 0.02); gain.gain.linearRampToValueAtTime(0, now + 0.15); osc.start(now); osc.stop(now + 0.15); }
+        }
+
+        function getSpeedMultiplier() { if (speed === 'slow') return 1.5; if (speed === 'fast') return 0.6; return 1; }
+
+        function createParticle() {
+          const wrapper = document.createElement('div'); wrapper.className = 'particle-wrapper';
+          const p = document.createElement('div');
+          
+          let classType = type;
+          if (type === 'custom-url' || type === 'custom-file') classType = 'custom-img';
+          p.classList.add('particle', classType);
+          
+          let finalSize = baseSize * (0.7 + Math.random() * 0.6);
+          wrapper.style.width = finalSize + 'px'; wrapper.style.height = finalSize + 'px';
+          
+          if (type === 'hearts') p.innerHTML = '❤️';
+          if (type === 'stars') p.innerHTML = '⭐';
+          if (type === 'hearts' || type === 'stars') { p.style.fontSize = finalSize + 'px'; p.style.lineHeight = finalSize + 'px'; }
+          
+          let vw = window.innerWidth; let vh = window.innerHeight;
+          let sX = 0, sY = 0, eX = 0, eY = 0;
+          
+          // Математика 10 направлений
+          switch(dir) {
+             case 'up': sX = Math.random()*vw; eX = sX; sY = vh+100; eY = -100; break;
+             case 'down': sX = Math.random()*vw; eX = sX; sY = -100; eY = vh+100; break;
+             case 'left': sY = Math.random()*vh; eY = sY; sX = vw+100; eX = -100; break;
+             case 'right': sY = Math.random()*vh; eY = sY; sX = -100; eX = vw+100; break;
+             case 'center-out': 
+                sX = vw/2; sY = vh/2; 
+                let angle = Math.random() * Math.PI * 2; let dist = Math.max(vw, vh);
+                eX = sX + Math.cos(angle)*dist; eY = sY + Math.sin(angle)*dist; break;
+             case 'center-in':
+                eX = vw/2; eY = vh/2; 
+                let angleIn = Math.random() * Math.PI * 2; let distIn = Math.max(vw, vh);
+                sX = eX + Math.cos(angleIn)*distIn; sY = eY + Math.sin(angleIn)*distIn; break;
+             case 'diag-ur': sX = Math.random()*(vw*2)-vw; sY = vh+100; eX = sX+vh; eY = -100; break;
+             case 'diag-ul': sX = Math.random()*(vw*2); sY = vh+100; eX = sX-vh; eY = -100; break;
+             case 'diag-dr': sX = Math.random()*(vw*2)-vw; sY = -100; eX = sX+vh; eY = vh+100; break;
+             case 'diag-dl': sX = Math.random()*(vw*2); sY = -100; eX = sX-vh; eY = vh+100; break;
+          }
+
+          // Установка CSS переменных для плавного полета
+          wrapper.style.setProperty('--startX', sX + 'px'); wrapper.style.setProperty('--startY', sY + 'px');
+          wrapper.style.setProperty('--endX', eX + 'px'); wrapper.style.setProperty('--endY', eY + 'px');
+          
+          let duration = (Math.random() * 3 + 2.5) * getSpeedMultiplier();
+          let delay = Math.random() * 3;
+          
+          wrapper.style.animation = 'moveParticle ' + duration + 's linear ' + delay + 's infinite';
+          
+          if (type === 'fireflies') { p.style.animation = 'sway ' + (duration/2) + 's ease-in-out ' + delay + 's infinite alternate, pulse 1.5s ease-in-out infinite alternate'; } 
+          else { p.style.animation = 'sway ' + (duration/2) + 's ease-in-out ' + delay + 's infinite alternate'; }
+          
+          wrapper.appendChild(p); container.appendChild(wrapper);
+          
+          setTimeout(() => playSnd(), delay * 1000);
+          setTimeout(() => { wrapper.remove(); createParticle(); }, (duration + delay) * 1000);
+        }
+
+        for (let i = 0; i < count; i++) createParticle();
+      })();
+      `;
+    }
+
+    let previewDebounce;
+    function updatePreview() {
+      clearTimeout(previewDebounce);
+      previewDebounce = setTimeout(() => {
+        previewContainer.innerHTML = '';
+        const iframe = document.createElement('iframe');
+        iframe.style.width = '100%'; iframe.style.height = '100%'; iframe.style.border = 'none'; iframe.style.pointerEvents = 'none'; 
+        previewContainer.appendChild(iframe);
+        const doc = iframe.contentWindow.document; doc.open();
+        
+        // В предпросмотре мы всегда показываем фон, поэтому временно включаем exportBg для генератора CSS
+        let tempExportBg = config.exportBg;
+        config.exportBg = true; 
+        let currentCss = getGeneratedCSS();
+        config.exportBg = tempExportBg;
+
+        doc.write(`<!DOCTYPE html><html><head><style>${currentCss}</style></head><body><script>${getGeneratedJS()}<\/script></body></html>`); doc.close();
+      }, 200);
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const fullHtml = `<!DOCTYPE html>\n<html lang="ru">\n<head>\n<meta charset="UTF-8">\n<style>\n${getGeneratedCSS()}\n</style>\n</head>\n<body>\n<script>\n${getGeneratedJS()}\n<\/script>\n</body>\n</html>`;
+      document.getElementById('codeOutput').value = fullHtml;
+      document.getElementById('export-modal').style.display = 'flex';
+    });
+    document.getElementById('closeBtn').addEventListener('click', () => document.getElementById('export-modal').style.display = 'none');
+    document.getElementById('copyBtn').addEventListener('click', (e) => {
+      document.getElementById('codeOutput').select(); document.execCommand('copy');
+      const btn = e.target; btn.textContent = 'Скопировано!'; setTimeout(() => btn.textContent = 'Скопировать код', 2000);
+    });
+
+    updatePreview();
+  </script>
+</body>
+</html>
