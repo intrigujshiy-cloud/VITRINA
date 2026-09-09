@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Доска Преподавателя Английского EXPERT MAX PRO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root {
+            --primary: #4F46E5; --rule-color: #10B981; --verb-color: #F59E0B; --tool-color: #6B7280;
+            --bg-color: #F3F4F6; --panel-bg: #FFFFFF; --text: #1F2937;
+        }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        .toolbar { background-color: var(--panel-bg); padding: 8px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #E5E7EB; z-index: 100; flex-wrap: wrap; }
+        .tools-bar { background-color: #F9FAFB; padding: 8px 15px; display: flex; gap: 8px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 99; flex-wrap: wrap; }
+        .bottom-bar { background-color: var(--panel-bg); padding: 10px 15px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 4px rgba(0,0,0,0.05); z-index: 100; justify-content: space-between;}
+        
+        select, button, input[type="color"], input[type="text"] { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; outline: none; }
+        button, select { cursor: pointer; background: white; display: flex; align-items: center; font-weight: 500;}
+        button:hover { background-color: #F3F4F6; }
+        #searchTopic { width: 150px; background: #F9FAFB; transition: 0.3s; }
+        #searchTopic:focus { border-color: var(--primary); background: white; width: 200px; }
+        
+        .btn-active { background-color: var(--primary); color: white; border-color: var(--primary); }
+        .btn-active:hover { background-color: #4338CA; }
+        .btn-rule-add { background-color: var(--rule-color); color: white; border-color: var(--rule-color); }
+        .btn-rule-add:hover { background-color: #059669; }
+        .btn-verbs { background-color: var(--verb-color); color: white; border-color: var(--verb-color); }
+        .btn-verbs:hover { background-color: #D97706; }
+        .btn-tool { background-color: white; color: var(--tool-color); }
+        .btn-tool.active-tool { background-color: #374151; color: white; border-color: #374151; }
+        
+        .separator { width: 1px; height: 20px; background: #D1D5DB; margin: 0 2px; }
+        
+        .main-container { display: flex; flex: 1; position: relative; overflow: hidden; }
+        .canvas-container { flex: 1; position: relative; background-color: white; overflow: hidden; }
+        .bg-lines { background: repeating-linear-gradient(0deg, transparent, transparent 29px, #D1D5DB 30px); }
+        .bg-grid { background: repeating-linear-gradient(0deg, transparent, transparent 29px, #E5E7EB 30px), repeating-linear-gradient(90deg, transparent, transparent 29px, #E5E7EB 30px); }
+        .bg-white { background: white; }
+        
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair; }
+        #laserCanvas { pointer-events: none; z-index: 50; }
+        #blindPreviewCanvas { pointer-events: none; z-index: 45; }
+        #draggablesContainer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 40; }
+        
+        /* Карточки */
+        .draggable { position: absolute; pointer-events: auto; background: #EFF6FF; border: 2px solid var(--primary); padding: 12px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); min-width: 280px; max-width: 480px; cursor: grab; font-size: 14px; display: flex; flex-direction: column; }
+
+        @keyframes neonPulseDyn {
+            0% { box-shadow: 0 0 5px var(--m-color), 0 0 10px var(--m-color), inset 0 0 5px var(--m-color); transform: scale(1); }
+            50% { box-shadow: 0 0 15px var(--m-color), 0 0 25px var(--m-color), inset 0 0 10px var(--m-color); transform: scale(1.02); }
+            100% { box-shadow: 0 0 5px var(--m-color), 0 0 10px var(--m-color), inset 0 0 5px var(--m-color); transform: scale(1); }
+        }
+        .neon-marker-box {
+            animation: neonPulseDyn 2s infinite ease-in-out;
+            border: 3px solid var(--m-color) !important;
+            background: transparent !important;
+        }
+        .draggable.rule-card { background: #ECFDF5; border-color: var(--rule-color); max-width: 520px; }
+        .draggable:active { cursor: grabbing; }
+        .draggable .close-btn { position: absolute; top: -10px; right: -10px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .draggable .content { outline: none; font-family: 'Segoe UI', Tahoma, sans-serif; margin-top: 8px; flex-grow: 1; line-height: 1.4; }
+        .draggable.formula-card .content { font-family: 'Consolas', monospace; white-space: pre-wrap; font-size: 13px;}
+        .example-text { color: #4B5563; font-style: italic; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 2px; margin-bottom: 8px; font-family: 'Segoe UI', Tahoma, sans-serif;}
+        .draggable h4 { margin: 0 0 8px 0; outline: none; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color: var(--primary);}
+        .draggable.rule-card h4 { color: var(--rule-color); }
+        
+        details { margin-bottom: 6px; background: rgba(255,255,255,0.7); border: 1px solid rgba(0,0,0,0.1); border-radius: 6px; }
+        summary { font-weight: 600; padding: 6px 8px; cursor: pointer; outline: none; user-select: none; color: var(--rule-color); position: relative; }
+        summary::-webkit-details-marker { display: none; }
+        summary::before { content: '▶'; display: inline-block; margin-right: 6px; font-size: 10px; transition: 0.2s; }
+        details[open] summary::before { transform: rotate(90deg); }
+        .details-body { padding: 6px 12px 10px 12px; font-size: 13px; border-top: 1px dashed rgba(0,0,0,0.1); color: #374151; }
+        .details-body ul { margin: 5px 0 0 0; padding-left: 20px; }
+        
+        .text-box { background: transparent; border: 2px dashed #9CA3AF; min-width: 100px; box-shadow: none; white-space: pre-wrap;}
+        .text-box:focus-within { border-color: var(--primary); background: rgba(255,255,255,0.9); }
+        .pull-btn { margin-top: 10px; padding: 6px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; transition: 0.2s; color: white;}
+        .formula-card .pull-btn { background-color: var(--rule-color); }
+        .rule-card .pull-btn { background-color: var(--primary); }
+
+        /* Шторка */
+        .blind-box { position: absolute; pointer-events: auto; background-color: #4B5563; border: 2px solid #1F2937; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: transform 0.2s; z-index: 45;}
+        .blind-box:hover { transform: scale(1.02); background-color: #4B5563; }
+        .blind-box::after { content: '👀 Нажми'; font-size: 12px; opacity: 0.9; }
+        
+        /* Выключаем кликабельность правил, когда рисуем шторку */
+        .mode-blind .draggable { pointer-events: none !important; }
+        .mode-blind .blind-box { pointer-events: auto !important; }
+
+        /* Слайды */
+        .slides-wrapper { display: flex; gap: 8px; overflow-x: auto; flex: 1; margin: 0 15px;}
+        .slide-btn { background: #E5E7EB; border: none; padding: 6px 15px; border-radius: 6px; font-weight: bold; color: #4B5563; white-space: nowrap;}
+        .slide-btn.active { background: var(--primary); color: white; }
+        .slide-add { background: #10B981; color: white; border: none; border-radius: 6px; font-weight: bold; padding: 6px 12px;}
+        .slide-add:hover { background: #059669; }
+        .slide-delete { background: #EF4444; color: white; border: none; border-radius: 6px; font-weight: bold; padding: 6px 10px; cursor: pointer;}
+        .slide-delete:hover { background: #DC2626; }
+
+        /* Модалки */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; width: 80%; max-width: 700px; max-height: 80vh; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 15px 20px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .modal-close { background: none; border: none; color: white; font-size: 24px; cursor: pointer; display: flex; align-items: center; justify-content: center; line-height: 1; height: 24px;}
+        .modal-body { padding: 0; overflow-y: auto; flex: 1; }
+        .verbs-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;}
+        .verbs-table th { position: sticky; top: 0; background: #F9FAFB; padding: 10px 15px; border-bottom: 2px solid #E5E7EB; color: #4B5563; }
+        .verbs-table td { padding: 8px 15px; border-bottom: 1px solid #E5E7EB; }
+        .rule-builder-content { padding: 20px; }
+        .rule-checkbox-label { display: flex; align-items: center; gap: 10px; padding: 10px; border: 1px solid #E5E7EB; border-radius: 6px; margin-bottom: 8px; cursor: pointer; background: #F9FAFB;}
+        .rule-builder-actions { padding: 15px 20px; background: #F9FAFB; border-top: 1px solid #E5E7EB; display: flex; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <input type="text" id="searchTopic" placeholder="🔍 Поиск темы...">
+        <select id="topicSelector">
+            <option value="none">-- Выбрать Грамматику (1-7 класс) --</option>
+            <optgroup label="Фонетика и Чтение (Magic E)">
+                <option value="phonetics_a">Гласная A (Открытый / Закрытый)</option>
+                <option value="phonetics_e">Гласная E</option>
+                <option value="phonetics_i">Гласная I / Y</option>
+                <option value="phonetics_o">Гласная O</option>
+                <option value="phonetics_u">Гласная U</option>
+            </optgroup>
+            <optgroup label="Основы (1-3 класс)">
+                <option value="to_be">Глагол To Be (am/is/are)</option>
+                <option value="have_got">Have got / Has got</option>
+                <option value="plural">Множественное число</option>
+                <option value="articles">Артикли (a, an, the)</option>
+                <option value="demonstrative">Указательные местоимения</option>
+                <option value="there_is">There is / There are</option>
+            </optgroup>
+            <optgroup label="Времена (Подробно)">
+                <option value="present_simple">Present Simple</option>
+                <option value="past_simple">Past Simple</option>
+                <option value="future_simple">Future Simple</option>
+                <option value="present_continuous">Present Continuous (Глаголы состояния!)</option>
+                <option value="past_continuous">Past Continuous</option>
+                <option value="future_continuous">Future Continuous</option>
+                <option value="present_perfect">Present Perfect</option>
+                <option value="past_perfect">Past Perfect</option>
+            </optgroup>
+            <optgroup label="Герундий и Инфинитив">
+                <option value="gerund_infinitive">Инфинитив и Герундий</option>
+            </optgroup>
+            <optgroup label="Конструкции и Модальные">
+                <option value="going_to">To be going to</option>
+                <option value="used_to">Used to</option>
+                <option value="modals_1">Can / Must / May</option>
+                <option value="modals_2">Should / Have to</option>
+            </optgroup>
+            <optgroup label="Предлоги, Падежи, Местоимения">
+                <option value="prepositions_place">Предлоги Места</option>
+                <option value="prepositions_time">Предлоги Времени</option>
+                <option value="prepositions_movement">Предлоги Движения</option>
+                <option value="possessive">Притяжательный падеж</option>
+                <option value="pronouns">Местоимения (Полные)</option>
+            </optgroup>
+            <optgroup label="Сложное (6-7 класс)">
+                <option value="passive_present">Passive Voice (Present Simple)</option>
+                <option value="passive_past">Passive Voice (Past Simple)</option>
+                <option value="adjectives">Степени сравнения</option>
+                <option value="conditionals_0_1">Conditionals (0 & 1)</option>
+                <option value="wh_questions">Специальные вопросы (Wh-)</option>
+            </optgroup>
+        </select>
+        
+        <button id="btnAddFormula" class="btn-active">🧮 Формулы</button>
+        <button id="btnAddRule" class="btn-rule-add">📖 Правила (Сборка)</button>
+        <button id="btnVerbsModal" class="btn-verbs">🔥 Неправильные глаголы</button>
+    </div>
+
+    <div class="tools-bar">
+        <button id="btnPen" class="btn-tool active-tool">✏️ Карандаш</button>
+        <button id="btnNeon" class="btn-tool">✨ Неон</button>
+        <button id="btnHighlighter" class="btn-tool" style="color: #D97706;">🖍️ Маркер</button>
+        <button id="btnArrow" class="btn-tool">↗️ Прямая стрелка</button>
+        <button id="btnCurveArrow" class="btn-tool">↪️ Стрелка-дуга</button>
+        <button id="btnEraser" class="btn-tool">🧽 Ластик</button>
+        <button id="btnSmartEraser" class="btn-tool" style="color: #EF4444;" title="Клик по карточке = удалить. Клик по фону = стереть все рисунки.">🪄 Умный ластик</button>
+        <button id="btnText" class="btn-tool">🔤 Текст</button>
+        <button id="btnSticker" class="btn-tool" style="background: #FEF08A; color: #854D0E; font-weight: bold;">📝 Стикер</button>
+        <button id="btnLaser" class="btn-tool">🔴 Указка</button>
+        <button id="btnSpotlight" class="btn-tool" style="background: #111827; color: #FBBF24;">🔦 Прожектор</button>
+        <button id="btnBlind" class="btn-tool" style="background: #374151; color: white;">⬛ Шторка</button>
+        <button id="btnTimeline" class="btn-tool" style="color: #4F46E5; font-weight: bold;">⏳ Ось времени</button>
+        <button id="btnEmoji" class="btn-tool">😀 Эмодзи</button>
+        <button id="btnMarkers" class="btn-tool" style="color: #4F46E5; font-weight: bold;">✨ Рамки</button>
+        
+        <div class="separator"></div>
+        <input type="color" id="colorPicker" value="#000000" title="Цвет карандаша">
+        <input type="color" id="markerColorPicker" value="#10B981" title="Цвет рамок/указателей" style="border-color: #10B981; border-width: 2px;">
+        
+        <button id="btnCollab" class="btn-tool" style="background: #10B981; color: white; margin-left: auto;">🌐 Урок 1 на 1</button>
+        
+    <div id="emojiPanel" style="display: none; position: absolute; top: 90px; left: 50%; transform: translateX(-50%); background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; grid-template-columns: repeat(7, 1fr); gap: 12px; font-size: 28px; cursor: pointer; border: 2px solid #E5E7EB; user-select: none;">
+        <span class="emoji-item">👑</span><span class="emoji-item">🏆</span><span class="emoji-item">🧲</span><span class="emoji-item">🎥</span><span class="emoji-item">📸</span><span class="emoji-item">👻</span><span class="emoji-item">✅</span>
+        <span class="emoji-item">❌</span><span class="emoji-item">💡</span><span class="emoji-item">🔥</span><span class="emoji-item">⚠️</span><span class="emoji-item">⭐</span><span class="emoji-item">❤️</span><span class="emoji-item">👍</span>
+        <span class="emoji-item">👎</span><span class="emoji-item">🚀</span><span class="emoji-item">📌</span><span class="emoji-item">🎭</span><span class="emoji-item">🧠</span><span class="emoji-item">⏳</span><span class="emoji-item">🎉</span>
+    </div>
+
+    <!-- Панель живых маркеров -->
+    <div id="markersPanel" style="display: none; position: absolute; top: 90px; left: 60%; transform: translateX(-50%); background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 8px; border: 2px solid #E5E7EB; user-select: none; font-size: 14px;">
+        <div style="font-weight: bold; color: #4F46E5; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px;">Инструменты внимания</div>
+        <button class="marker-add-btn" data-type="neon_box" style="background:#EEF2FF; border:1px solid #C7D2FE; padding:6px 10px; border-radius:6px; cursor:pointer; text-align:left;">🟩 Неоновая рамка</button>
+        <button class="marker-add-btn" data-type="arrow_pulse" style="background:#EEF2FF; border:1px solid #C7D2FE; padding:6px 10px; border-radius:6px; cursor:pointer; text-align:left;">↗️ Указатель</button>
+        <button class="marker-add-btn" data-type="spotlight_ring" style="background:#EEF2FF; border:1px solid #C7D2FE; padding:6px 10px; border-radius:6px; cursor:pointer; text-align:left;">⭕ Круг фокуса</button>
+    </div>
+
+    <!-- Панель совместного доступа -->
+    <div id="collabPanel" style="display: none; position: absolute; top: 90px; right: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 10px; border: 2px solid #10B981; font-size: 14px;">
+        <div style="font-weight: bold; color: #10B981; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px;">Комната связи (P2P)</div>
+        <button id="btnCreateRoom" style="background: #10B981; color: white; width: 100%; justify-content: center; padding: 8px;">1. Создать комнату</button>
+        <div style="text-align: center; margin: 2px 0; color: #6B7280; font-size: 12px;">или</div>
+        <input type="text" id="joinRoomId" placeholder="Код от учителя..." style="width: 100%; box-sizing: border-box; text-align: center;">
+        <button id="btnJoinRoom" style="background: #4F46E5; color: white; width: 100%; justify-content: center; padding: 8px;">2. Войти к учителю</button>
+        <div id="collabStatus" style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 5px; background: #F9FAFB; padding: 5px; border-radius: 4px;">Отключено</div>
+        
+        <!-- Встроенный чат (появится после подключения) -->
+        <div id="chatArea" style="display: none; flex-direction: column; gap: 5px; margin-top: 10px; border-top: 1px solid #E5E7EB; padding-top: 10px;">
+            <div id="chatMessages" style="height: 120px; overflow-y: auto; background: #F9FAFB; border: 1px solid #E5E7EB; border-radius: 4px; padding: 5px; font-size: 12px; display: flex; flex-direction: column; gap: 4px; color: #374151;"></div>
+            <div style="display: flex; gap: 4px;">
+                <button id="btnSendFile" style="background: #E5E7EB; color: #4B5563; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer;" title="Отправить файл">📎</button>
+                <input type="file" id="chatFileInput" style="display: none;">
+                <input type="text" id="chatInput" placeholder="Сообщение или ссылка..." style="flex: 1; padding: 4px; font-size: 12px; border: 1px solid #D1D5DB; border-radius: 4px; outline: none;">
+                <button id="btnSendMsg" style="background: #4F46E5; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer;">➤</button>
+            </div>
+        </div>
+    </div>
+        <select id="lineWidth"><option value="2">Тонкий</option><option value="4" selected>Средний</option><option value="8">Толстый</option></select>
+        <select id="bgSelector"><option value="bg-lines">Фон: Линейка</option><option value="bg-grid">Фон: Клетка</option><option value="bg-white">Фон: Белый</option><option value="custom" style="display:none;">Свой фон</option></select>
+        
+        <button id="btnBgUpload" class="btn-tool" style="background: #F3F4F6;">🖼️ Свой фон / PDF</button>
+        <input type="file" id="bgImageInput" accept="image/*,.pdf" style="display: none;">
+        
+        <div class="separator"></div>
+        <button id="btnUndo" class="btn-tool" title="Шаг назад">↩️ Отменить</button>
+        <button id="btnRedo" class="btn-tool" title="Шаг вперед">↪️ Вернуть</button>
+        <button id="btnClear" class="btn-tool" style="color: #EF4444;">🗑️ Очистить слайд</button>
+    </div>
+
+    <div class="main-container">
+        <div class="canvas-container bg-lines" id="boardArea">
+            <canvas id="whiteboard"></canvas>
+            <canvas id="blindPreviewCanvas"></canvas>
+            <canvas id="laserCanvas"></canvas>
+            <div id="draggablesContainer"></div>
+            <!-- Корзина для удаления -->
+            <div id="trashBin" style="position: absolute; bottom: 30px; right: 30px; width: 80px; height: 80px; background: rgba(255, 255, 255, 0.8); border: 3px dashed #EF4444; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 40px; opacity: 0.5; z-index: 50; transition: all 0.2s; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); pointer-events: none;">🗑️</div>
+        </div>
+    </div>
+
+    <div class="bottom-bar">
+        <div class="slides-wrapper" id="slidesWrapper">
+            <!-- Слайды генерируются тут -->
+        </div>
+        <div style="display: flex; gap: 5px;">
+            <button class="slide-add" id="btnAddSlide" title="Добавить слайд">✚ Слайд</button>
+            <button class="slide-delete" id="btnDeleteSlide" title="Удалить текущий слайд">✖ Удалить</button>
+        </div>
+        <div class="separator" style="height: 30px;"></div>
+        <button id="btnSavePreset" style="background: #F3F4F6;">💾 Скачать Урок (JSON)</button>
+        <input type="file" id="importFile" accept=".json" style="display: none;">
+        <button id="btnLoadPreset" style="background: #F3F4F6;">📂 Загрузить Урок</button>
+        <button id="btnSavePNG" style="background: var(--primary); color: white;">📸 Скачать Скриншот</button>
+    </div>
+
+    <!-- Модалки -->
+    <div class="modal-overlay" id="verbsModal">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--verb-color);">
+                <h3>Таблица неправильных глаголов</h3><button class="modal-close" onclick="document.getElementById('verbsModal').classList.remove('active')">×</button>
+            </div>
+            <div style="padding: 15px; background: #F3F4F6; border-bottom: 1px solid #E5E7EB;"><input type="text" id="searchVerbs" placeholder="Поиск (напр: speak или говорить)..." style="width: 100%; box-sizing: border-box;"></div>
+            <div class="modal-body"><table class="verbs-table"><thead><tr><th>V1</th><th>V2</th><th>V3</th><th>Перевод</th></tr></thead><tbody id="verbsTableBody"></tbody></table></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="ruleBuilderModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header" style="background: var(--rule-color);">
+                <h3>Сборка правила для ученика</h3><button class="modal-close" onclick="document.getElementById('ruleBuilderModal').classList.remove('active')">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="rule-builder-content">
+                    <p style="margin-top: 0; font-size: 14px; color: #4B5563;">Отметьте галочками нужные пункты:</p>
+                    <div id="ruleBuilderBody"></div>
+                </div>
+            </div>
+            <div class="rule-builder-actions">
+                <button style="background: var(--rule-color); color: white; padding: 8px 15px; border: none; border-radius: 6px; font-weight: bold;" id="btnConfirmRuleBuild">Добавить на доску</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. ГЛОБАЛЬНАЯ БАЗА ---
+        const grammarData = {
+            
+            // --- ФОНЕТИКА И ЧТЕНИЕ ---
+            phonetics_a: {
+                title: "Чтение: Буква Aa",
+                formula: `Открытый слог (как в алфавите): [ei]\n<div class="example-text">n<b>a</b>me, c<b>a</b>k<b>e</b>, m<b>a</b>k<b>e</b></div>\nЗакрытый слог (кратко): [æ]\n<div class="example-text">c<b>a</b>t, h<b>a</b>t, m<b>a</b>p</div>`,
+                rule: `🪄 <b>Магия немой буквы E!</b>\n<details><summary>1. Открытый слог (Magic E)</summary><div class="details-body">Если в конце слова стоит гласная <b>e</b>, она сама молчит, но заставляет предыдущую гласную кричать свое имя из алфавита! Буква <b>A</b> кричит <b>[эй]</b>. <i>Пример: rat [рэт] -> rat<b>e</b> [рэйт]</i>.</div></details>\n<details><summary>2. Закрытый слог</summary><div class="details-body">Согласные буквы закрывают слог как двери. Гласную A зажали, и она издает только короткий звук <b>[э]</b>. <i>Пример: b<b>a</b>d, s<b>a</b>d.</i></div></details>`
+            },
+            phonetics_e: {
+                title: "Чтение: Буква Ee",
+                formula: `Открытый слог (как в алфавите): [i:]\n<div class="example-text">h<b>e</b>, sh<b>e</b>, P<b>e</b>t<b>e</b></div>\nЗакрытый слог (кратко): [e]\n<div class="example-text">p<b>e</b>n, t<b>e</b>n, r<b>e</b>d</div>`,
+                rule: `🪄 <b>Магия немой буквы E!</b>\n<details><summary>1. Открытый слог (Magic E)</summary><div class="details-body">Буква E кричит свое алфавитное имя <b>[и]</b> (долго). <i>Пример: P<b>e</b>t<b>e</b> [Пит].</i></div></details>\n<details><summary>2. Закрытый слог</summary><div class="details-body">Короткий звук <b>[э]</b>. <i>Пример: p<b>e</b>t [пэт].</i></div></details>`
+            },
+            phonetics_i: {
+                title: "Чтение: Буквы Ii / Yy",
+                formula: `Открытый слог (как в алфавите): [ai]\n<div class="example-text">b<b>i</b>k<b>e</b>, t<b>i</b>m<b>e</b>, m<b>y</b></div>\nЗакрытый слог (кратко): [i]\n<div class="example-text">p<b>i</b>g, b<b>i</b>g, s<b>y</b>stem</div>`,
+                rule: `🪄 <b>Магия немой буквы E!</b>\n<details><summary>1. Открытый слог (Magic E)</summary><div class="details-body">Буква I (или Y под ударением) кричит <b>[ай]</b>. <i>Пример: bit [бит] -> bit<b>e</b> [байт].</i></div></details>\n<details><summary>2. Закрытый слог</summary><div class="details-body">Короткий звук <b>[и]</b>. <i>Пример: s<b>i</b>x [сикс].</i></div></details>`
+            },
+            phonetics_o: {
+                title: "Чтение: Буква Oo",
+                formula: `Открытый слог (как в алфавите): [əu]\n<div class="example-text">n<b>o</b>s<b>e</b>, h<b>o</b>m<b>e</b>, g<b>o</b></div>\nЗакрытый слог (кратко): [ɒ]\n<div class="example-text">d<b>o</b>g, fr<b>o</b>g, n<b>o</b>t</div>`,
+                rule: `🪄 <b>Магия немой буквы E!</b>\n<details><summary>1. Открытый слог (Magic E)</summary><div class="details-body">Буква O кричит <b>[оу]</b>. <i>Пример: not [нот] -> not<b>e</b> [ноут].</i></div></details>\n<details><summary>2. Закрытый слог</summary><div class="details-body">Короткий и отрывистый звук <b>[о]</b>. <i>Пример: b<b>o</b>x [бокс].</i></div></details>`
+            },
+                        present_continuous: {
+                title: "Present Continuous",
+                formula: `(+) S + am/is/are + V(ing)\n<div class="example-text">Miroslava is reading right now.</div>\n(-) S + am/is/are + not + V(ing)\n(?) Am/Is/Are + S + V(ing)?`,
+                rule: `👀 <b>Действие в процессе (прямо сейчас).</b>
+                <details><summary>1. Прямо сейчас (В момент речи)</summary><div class="details-body">Действие происходит в ту самую секунду. <i>He is doing his homework now.</i></div></details>
+                <details><summary>2. Временные ситуации и 100% планы</summary><div class="details-body"><b>Временная ситуация:</b> <i>I am living with friends this week.</i><br><b>Запланированное будущее:</b> <i>We are flying to Paris tomorrow (билеты куплены).</i></div></details>
+                <details><summary>3. Раздражение (со словом Always)</summary><div class="details-body"><i>You are always losing your keys! (Ты вечно теряешь ключи, бесит!).</i></div></details>
+                <details><summary>4. Маркеры времени и Правила -ing</summary><div class="details-body"><b>Маркеры:</b> now, at the moment, currently, this week, Look!, Listen!<br><b>Правила -ing:</b> Немая -e выбрасывается (make -> making). Короткие слова удваивают конец (sit -> sitting). -ie меняется на y (lie -> lying).</div></details>
+                <details><summary>5. Глаголы-шпионы (Stative Verbs - ИСКЛЮЧЕНИЯ)</summary><div class="details-body">
+                    Обычно глаголы чувств и мыслей (love, want, know, understand) <b>не используются</b> с -ing. Мы говорим "I know him" (а не I am knowing).<br>
+                    Но есть <b>двуличные глаголы</b>, которые меняют смысл:<br>
+                    • <b>THINK:</b> I think it's a good idea (Я считаю/Мнение - Simple) <b>VS</b> I am thinking about you (Процесс обдумывания - Continuous).<br>
+                    • <b>HAVE:</b> I have a dog (Владение - Simple) <b>VS</b> I am having dinner/a shower (Процесс ужина/душа - Continuous).<br>
+                    • <b>SEE:</b> I see a bird (Вижу глазами - Simple) <b>VS</b> I am seeing my doctor tomorrow (Встречаюсь по записи - Continuous).<br>
+                    • <b>TASTE/SMELL:</b> The soup tastes good (Суп вкусный - Simple) <b>VS</b> I am tasting the soup (Я сейчас пробую суп - Continuous).
+                </div></details>`
+            },
+            gerund_infinitive: {
+                title: "Герундий и Инфинитив",
+                formula: `Герундий: V + ing (reading)\nПолный Инфинитив: to + V (to read)\nГолый Инфинитив: V (read)`,
+                rule: `🔄 <b>Что ставить после первого глагола?</b>
+                <details><summary>1. Герундий (V-ing)</summary><div class="details-body">Используется после глаголов любви/ненависти и предпочтений (enjoy, mind, suggest, finish, keep, deny). А также <b>ПОСЛЕ ЛЮБЫХ ПРЕДЛОГОВ</b> (in, on, at, of, for).<br><i>I enjoy <b>reading</b>. He is good at <b>swimming</b>.</i></div></details>
+                <details><summary>2. Полный Инфинитив (to V)</summary><div class="details-body">Используется после глаголов планов, надежд, обещаний (want, decide, hope, promise, plan, refuse). А также для объяснения ЦЕЛИ (зачем пошел?).<br><i>I decided <b>to go</b>. I went to the shop <b>to buy</b> milk.</i></div></details>
+                <details><summary>3. Голый Инфинитив (V без to)</summary><div class="details-body">Используется ПОСЛЕ ВСЕХ МОДАЛЬНЫХ глаголов (can, must, should). А также после глаголов <b>Let</b> (позволять) и <b>Make</b> (заставлять).<br><i>I can <b>swim</b>. Let me <b>go</b>. My mom makes me <b>clean</b> my room.</i></div></details>
+                <details><summary>4. Глаголы-хамелеоны (Stop, Remember, Forget)</summary><div class="details-body">Они меняют смысл в зависимости от того, что стоит после них!<br>• <b>STOP + to V:</b> Остановился, с целью что-то сделать. <i>He stopped <b>to smoke</b> (Остановился, чтобы покурить).</i><br>• <b>STOP + V-ing:</b> Бросил процесс. <i>He stopped <b>smoking</b> (Он бросил курить).</i><br>• <b>REMEMBER + to V:</b> Не забудь сделать (задача на будущее). <i>Remember <b>to buy</b> milk.</i><br>• <b>REMEMBER + V-ing:</b> Помню, как делал это в прошлом (воспоминание). <i>I remember <b>locking</b> the door.</i></div></details>`
+            },
+            to_be: {
+                title: "Глагол To Be",
+                formula: `I + am \nHe/She/It + is \nWe/You/They + are \n\n(-) I am not / He isn't / We aren't\n(?) Am I? / Is he? / Are they?`,
+                rule: `✨ <b>Король To be (быть, являться, находиться)</b>
+                <details><summary>1. Главное правило и случаи использования</summary><div class="details-body">В английском НЕ БЫВАЕТ предложений без глагола! Если в русском глагола нет ("Я ученик", "Она красивая"), в английском нужен To Be. <br>Используем для: <b>Возраста</b> (I am 10), <b>Описания</b> (She is smart), <b>Места</b> (We are at home), <b>Профессий</b> (He is a doctor).</div></details>
+                <details><summary>2. Суперсила (Отсутствие помощников)</summary><div class="details-body">Он сам делает отрицания и вопросы! Ему НЕ НУЖНЫ do/does.<br>(-) Притягивает NOT: <i>She isn't sad.</i><br>(?) Прыгает на 1-е место: <i>Are you ready?</i></div></details>
+                <details><summary>3. Устойчивые выражения (Важно!)</summary><div class="details-body">В английском это состояния, а в русском глаголы:<br><b>to be late</b> - опаздывать (I am late)<br><b>to be hungry / thirsty</b> - хотеть есть / пить<br><b>to be afraid of</b> - бояться (He is afraid of dogs)<br><b>to be right / wrong</b> - быть правым / неправым.</div></details>
+                <details><summary>4. Прошедшее и Будущее время</summary><div class="details-body"><b>Past:</b> I, He, She, It -> <b>was</b> (был). We, You, They -> <b>were</b> (были).<br><b>Future:</b> Для всех -> <b>will be</b> (будет). В вопросах will отрывается: <i>Will he be at home?</i></div></details>`
+            },
+            have_got: {
+                title: "Have got / Has got",
+                formula: `I/We/You/They + have got\nHe/She/It + has got\n\n(-) haven't got / hasn't got\n(?) Have I got? / Has he got?`,
+                rule: `🐶 <b>Означает 'иметь' (владеть чем-то).</b>
+                <details><summary>1. Использование и разница с HAVE</summary><div class="details-body"><b>Have got</b> (Британский вариант) используем для: вещей, питомцев, семьи, внешности, болезней (I've got a headache).<br>В чем разница с <b>Have</b>? Смысл один, но грамматика разная!<br>- <i>Have got:</i> сам строит вопросы (Have you got a pen?)<br>- <i>Have:</i> требует помощника DO/DOES (Do you have a pen?)</div></details>
+                <details><summary>2. Правило хвостика "GOT"</summary><div class="details-body">В вопросах и минусах прыгает и меняется только Have/Has, а "got" сидит на месте после подлежащего!<br><i>Has Stepa <b>got</b> a cat? He hasn't <b>got</b> a dog.</i></div></details>
+                <details><summary>3. Краткие ответы и Прошедшее время</summary><div class="details-body">В кратких ответах got отваливается: <i>Yes, I have. / No, she hasn't.</i><br><b>В прошлом времени:</b> "got" вообще исчезает! Говорим просто <b>HAD</b> (У меня был кот - I had a cat).</div></details>`
+            },
+            plural: {
+                title: "Множественное число",
+                formula: `Обычно: + s (cat - cats)\nШипящие (-s,-ss,-sh,-ch,-x,-o): + es (boxes)\nСогласная+y: y->i+es (babies)\nГласная+y: просто +s (boys)\n-f / -fe: -> v+es (wolves)`,
+                rule: `🧍‍♂️-> 👨‍👩‍👦 <b>Как сделать много из одного.</b>
+                <details><summary>1. Исключения (Меняют корень)</summary><div class="details-body">man – men, woman – women, child – children, tooth – teeth, foot – feet, mouse – mice, goose - geese, person - people.</div></details>
+                <details><summary>2. Те, кто не меняются (Одинаковые)</summary><div class="details-body">sheep (овца/овцы), fish (рыба/рыбы), deer (олень/олени), fruit (фрукты вообще, но fruits - виды фруктов), hair (волосы - всегда ед.число!).</div></details>
+                <details><summary>3. Всегда множественные (Парные предметы)</summary><div class="details-body">scissors (ножницы), trousers / jeans (штаны), glasses (очки), clothes (одежда). С ними используем <b>are</b> (These jeans are blue).</div></details>
+                <details><summary>4. Заимствованные (Сложные, 7+ класс)</summary><div class="details-body">Из латыни/греческого: datum - data (данные), phenomenon - phenomena, cactus - cacti.</div></details>`
+            },
+            articles: {
+                title: "Артикли (a, an, the)",
+                formula: `A + согласный (a book)\nAN + гласный ЗВУК (an apple)\nTHE - конкретный предмет\nZERO (ничего) - имена, города, обобщение`,
+                rule: `🎩 <b>Артикли — шапочки для существительных.</b>
+                <details><summary>1. Неопределенный A / AN</summary><div class="details-body">Ставим, если предмет ОДИН, мы видим его ВПЕРВЫЕ или он "какой-то любой". Произошел от слова "один" (one). Нельзя ставить перед множественным числом или неисчисляемыми (вода, снег).<br>❗️ Смотрим на ЗВУК, а не букву: <b>a</b> university (звук 'й'), <b>an</b> hour (звук 'а').</div></details>
+                <details><summary>2. Определенный THE</summary><div class="details-body">Произошел от слова "этот" (that). Ставим:<br>1. О предмете уже говорили: I see a cat. <b>The</b> cat is black.<br>2. Понятно из ситуации: Close <b>the</b> door (дверь в этой комнате).<br>3. Единственные в мире: the Sun, the Earth, the Internet.<br>4. С превосходной степенью: <b>the</b> best game.</div></details>
+                <details><summary>3. Нулевой (Школа, языки, еда)</summary><div class="details-body">Перед именами (Misha), множественным числом ВООБЩЕ (I like cats).<br><b>Школьные предметы:</b> БЕЗ артикля (Math, Biology).<br><b>Приемы пищи:</b> БЕЗ артикля (have breakfast).<br><b>Языки:</b> БЕЗ артикля (English). НО если есть слово "language", ставим THE (The English language).<br><b>Заведения:</b> Если идем по прямому назначению, артикль не нужен (go to school - учиться).</div></details>
+                <details><summary>4. География (Улицы, площади, страны)</summary><div class="details-body"><b>БЕЗ артикля (Нулевой):</b><br>- Улицы, площади, проспекты, парки (Red Square, Oxford Street, Hyde Park).<br>- Страны из одного слова и города (Russia, London).<br>- Озера и одиночные горы (Lake Baikal, Everest).<br><b>С артиклем THE:</b><br>- Страны со словами Republic, Kingdom, States, Federation (the USA, the UK, the Russian Federation).<br>- Реки, моря, океаны (the Thames, the Black Sea).<br>- Группы островов и гор (the Alps, the Bahamas).</div></details>`
+            },
+            demonstrative: {
+                title: "Указательные местоимения",
+                formula: `Близко: This (ед.ч) / These (мн.ч)\nДалеко: That (ед.ч) / Those (мн.ч)`,
+                rule: `👉 <b>Указываем пальцем на предмет или время.</b>
+                <details><summary>1. Разница в пространстве</summary><div class="details-body"><b>This</b> (этот) - в руках или рядом. <b>These</b> (эти) - много рядом.<br><b>That</b> (тот) - далеко, нужно тянуться. <b>Those</b> (те) - много далеко.</div></details>
+                <details><summary>2. Разница во времени и по телефону</summary><div class="details-body"><b>Для времени:</b> this morning (сегодня утром), that day (в ТОТ день в прошлом).<br><b>Знакомство и телефон:</b> По телефону мы говорим: "Hello, <b>this</b> is Misha. Is <b>that</b> Stepa?" (Это Миша, а там Стёпа?). Когда знакомим друзей: "Mom, <b>this</b> is my friend."</div></details>`
+            },
+            there_is: {
+                title: "There is / There are",
+                formula: `Ед.ч: There is a... (There's)\nМн.ч: There are ...\n\n(-) There isn't / There aren't\n(?) Is there...? / Are there...?`,
+                rule: `🏠 <b>Конструкция-навигатор (Наличие предмета в месте).</b>
+                <details><summary>1. Правило перевода и использования</summary><div class="details-body">Переводим на русский <b>С КОНЦА</b> (с места). <i>There is a pen on the desk. -> На столе (есть) ручка.</i> Используем всегда, когда вводим новый предмет в новой локации.</div></details>
+                <details><summary>2. Правило первого слова (Перечисления)</summary><div class="details-body">Если мы перечисляем предметы, глагол (is/are) подстраивается ТОЛЬКО под ПЕРВОЕ слово после него!<br><i>There <b>is</b> <u>an apple</u> and two bananas.</i> (is, потому что яблоко одно).<br><i>There <b>are</b> <u>two bananas</u> and an apple.</i> (are, потому что бананов два).</div></details>
+                <details><summary>3. Прошедшее и Будущее время</summary><div class="details-body"><b>Past:</b> There was (было одно), There were (было много). <i>There was a dog in the yard.</i><br><b>Future:</b> There will be (Будет, для всех). <i>There will be a party tomorrow.</i></div></details>`
+            },
+            pronouns: {
+                title: "Местоимения (Полные)",
+                formula: `Subj|Obj |Possess|Absolute\nI   |me  |my     |mine\nHe  |him |his    |his\nShe |her |her    |hers\nIt  |it  |its    |-\nWe  |us  |our    |ours\nThey|them|their  |theirs\nYou |you |your   |yours\n\nВозвратные: myself, yourself, himself, ourselves, themselves.`,
+                rule: `🎭 <b>Все маски и роли местоимений!</b>
+                <details><summary>1. Subject и Object (Подлежащее и Дополнение)</summary><div class="details-body"><b>Subject:</b> Делает действие, стоит в начале (<b>I</b> see a dog).<br><b>Object:</b> Получает действие, отвечает на вопрос кого/кому? Стоит ПОСЛЕ глагола/предлога. (The dog sees <b>me</b>. Look at <b>him</b>).</div></details>
+                <details><summary>2. Притяжательные (My vs Mine)</summary><div class="details-body"><b>Зависимые (my, his, our):</b> После них ОБЯЗАТЕЛЬНО идет предмет! (This is <b>my</b> book).<br><b>Абсолютные (mine, yours, ours):</b> Заменяют предмет, чтобы не повторяться. Существительное после них ставить НЕЛЬЗЯ! (This book is <b>mine</b> - эта книга моя).</div></details>
+                <details><summary>3. Возвратные (-self / -selves)</summary><div class="details-body">Действие направлено на себя (русские -ся/-сь). <i>I cut <b>myself</b> (Я порезался). We did it <b>ourselves</b> (Мы сделали это сами).</i> В мн.числе f меняется на ves!</div></details>
+                <details><summary>4. Неопределенные (Some, Any, No, Every)</summary><div class="details-body">
+                    <b>Some- (какой-то):</b> Для (+) <i>Somebody is here.</i><br>
+                    <b>Any- (любой):</b> Для (?) и (-) <i>Is anybody here? I don't see anything.</i><br>
+                    <b>No- (никто/ничто):</b> Делает (-) само по себе. <i>Nobody knows (Никто не знает).</i> В английском нельзя делать двойное отрицание!<br>
+                    ❗️<b>СУПЕР-ПРАВИЛО:</b> после слов на -body, -one, -thing глагол ВСЕГДА идет в ед.числе (как для He/She/It). <i>Everybody <b>is</b>... Nobody <b>knows</b>...</i>
+                </div></details>`
+            },
+            present_simple: {
+                title: "Present Simple",
+                formula: `(+) S + V / V(s/es)\n<div class="example-text">Matvey often plays games.</div>\n(-) S + do/does + not + V\n<div class="example-text">Stepa doesn't like broccoli.</div>\n(?) Do/Does + S + V?\n<div class="example-text">Does she speak English?</div>`,
+                rule: `✨ <b>Факт, привычка или регулярное действие.</b>
+                <details><summary>1. Использование (Все случаи)</summary><div class="details-body">1. Привычки и рутина (I brush teeth daily).<br>2. Законы природы и факты (Water boils at 100C).<br>3. <b>Расписание:</b> Поезда, кино, уроки (The train leaves at 5 PM - даже если это будущее!).<br>4. С глаголами состояния (love, know, want).</div></details>
+                <details><summary>2. Маркеры времени и их место</summary><div class="details-body"><b>Частотные:</b> always, usually, often, sometimes, rarely, never. Ставятся <b>ПЕРЕД</b> обычным глаголом (I <i>always</i> go), но <b>ПОСЛЕ</b> To Be (I am <i>always</i> late).<br>Длинные маркеры (every day/week, twice a week) ставятся в конец.</div></details>
+                <details><summary>3. Правила окончаний -s / -es / -ies</summary><div class="details-body">Только для He, She, It в утверждениях (+)!<br>Обычно (+s): play -> plays.<br>Шипящие (-s, -ss, -sh, -ch, -x, -o): +es (wash -> washes, go -> goes).<br>Согласная+Y: y меняется на i+es (fly -> flies). Но гласная+Y - просто +s (boy -> boys).</div></details>`
+            },
+            past_simple: {
+                title: "Past Simple",
+                formula: `(+) S + V2 / V(ed)\n<div class="example-text">Misha played football yesterday.</div>\n(-) S + did + not + V\n<div class="example-text">He didn't go to school.</div>\n(?) Did + S + V?\n<div class="example-text">Did you see that?</div>`,
+                rule: `🦖 <b>Действие завершилось в прошлом (известно когда).</b>
+                <details><summary>1. Использование и Маркеры</summary><div class="details-body">Одиночный факт в прошлом или цепочка действий (Проснулся, умылся, оделся).<br><b>Маркеры:</b> yesterday (вчера), last week (прошлая неделя - без предлога in!), 5 days ago (назад), in 2010.</div></details>
+                <details><summary>2. Правильные, Неправильные и DID</summary><div class="details-body">Правильные (Regular): +ed (played).<br>Неправильные (Irregular): 2-я колонка (go -> went).<br>❗️<b>Правило DID:</b> В (-) и (?) помощник DID забирает прошедшее время себе! Глагол теряет -ed или возвращается в 1 форму (He didn't <b>go</b>, а не didn't went!).</div></details>
+                <details><summary>3. Правила окончания -ed и Произношение</summary><div class="details-body"><b>Написание:</b> like->liked, study->studied (после согласной y->i), stop->stopped (короткое слово удваивает букву).<br><b>Произношение:</b> <br>[t] - после глухих (worked, washed). <br>[d] - после звонких и гласных (played, lived). <br>[id] - только после звуков t/d (wanted, needed).</div></details>
+                <details><summary>4. Конструкция Used To (Раньше делал)</summary><div class="details-body">Используется для старых привычек, которые сейчас не делаем. <i>I used to smoke (Раньше курил, сейчас нет).</i> В минусах: <i>I didn't use to like olives.</i></div></details>`
+            },
+            future_simple: {
+                title: "Future Simple",
+                formula: `(+) S + will + V\n<div class="example-text">Elisey will help you tomorrow.</div>\n(-) S + will not (won't) + V\n<div class="example-text">I won't tell anyone.</div>\n(?) Will + S + V?\n<div class="example-text">Will we go to the park?</div>`,
+                rule: `🔮 <b>Прогнозы, обещания, спонтанные решения.</b>
+                <details><summary>1. Когда использовать именно WILL?</summary><div class="details-body">1. <b>Прогнозы без доказательств:</b> I think robots will do our homework (Я просто так думаю).<br>2. <b>Обещания / Угрозы:</b> I promise I will clean my room.<br>3. <b>Спонтанные решения:</b> Решение принято прямо сейчас, в секунду речи. Звонит телефон? - <i>I will answer it!</i></div></details>
+                <details><summary>2. Shall vs Will</summary><div class="details-body">Слово <b>Shall</b> устарело для будущего времени, но мы используем его для предложений помощи: <i>Shall I open the window? (Мне открыть окно?). Shall we go? (Пойдем?).</i> Используется только с I и We.</div></details>`
+            },
+            past_continuous: {
+                title: "Past Continuous",
+                formula: `(+) S + was/were + V(ing)\n<div class="example-text">I was reading at 5 PM.</div>\n(-) S + was/were + not + V(ing)\n<div class="example-text">They weren't sleeping.</div>\n(?) Was/Were + S + V(ing)?\n<div class="example-text">Was he playing a game?</div>`,
+                rule: `🕰️ <b>Процесс в прошлом (в конкретную точку времени).</b>
+                <details><summary>1. Использование и Маркеры</summary><div class="details-body">1. <b>Точное время в прошлом:</b> at 5 o'clock yesterday, from 2 to 4 PM.<br>2. <b>Два параллельных процесса:</b> While I was reading, my mom was cooking (Пока я читал, мама готовила).<br>3. <b>Фон для истории:</b> The sun was shining, birds were singing... (создаем атмосферу).</div></details>
+                <details><summary>2. Прерванное действие (When vs While)</summary><div class="details-body">Долгое действие (Continuous) прерывается коротким (Simple).<br><i>I <b>was washing</b> the dishes WHEN the phone <b>rang</b>.</i><br><b>While</b> (пока) ставится перед долгим действием. <b>When</b> (когда) - перед коротким.</div></details>`
+            },
+            future_continuous: {
+                title: "Future Continuous",
+                formula: `(+) S + will be + V(ing)\n<div class="example-text">I will be flying to Moscow at 3 PM.</div>\n(-) S + won't be + V(ing)\n(?) Will + S + be + V(ing)?\n<div class="example-text">Will you be working tomorrow?</div>`,
+                rule: `🚀 <b>Процесс в будущем (запланированная занятость).</b>
+                <details><summary>1. Использование</summary><div class="details-body">1. <b>Точное время в будущем:</b> Завтра с 5 до 6 я буду делать уроки, не звони мне! (I will be doing my homework from 5 to 6).<br>2. <b>Вежливый вопрос о планах:</b> Will you be using the car tomorrow? (Ты будешь использовать машину завтра? - Намек, чтобы одолжить).</div></details>`
+            },
+            present_perfect: {
+                title: "Present Perfect",
+                formula: `(+) S + have/has + V3/V(ed)\n<div class="example-text">I have lost my keys!</div>\n(-) S + haven't/hasn't + V3\n<div class="example-text">Stepa hasn't eaten yet.</div>\n(?) Have/Has + S + V3?\n<div class="example-text">Have you ever seen a tiger?</div>`,
+                rule: `🏆 <b>Время-результат! Действие в прошлом, а результат СЕЙЧАС.</b>
+                <details><summary>1. Отличие от Past Simple (Суть)</summary><div class="details-body">В Past Simple нам важно КОГДА это было (yesterday). В Present Perfect нам важен сам ФАКТ или ОПЫТ (к текущему моменту). <i>I have lost my keys (Я потерял ключи = факт: сейчас я не могу попасть домой).</i></div></details>
+                <details><summary>2. Маркеры времени</summary><div class="details-body"><b>already</b> (уже), <b>just</b> (только что), <b>ever</b> (когда-либо), <b>never</b> (никогда) — ставятся МЕЖДУ have/has и глаголом.<br><b>yet</b> (еще не / уже?) — ставится В КОНЦЕ отрицаний и вопросов (I haven't done it yet).<br><b>lately/recently</b> (недавно/на днях).</div></details>
+                <details><summary>3. For vs Since (Как долго?)</summary><div class="details-body">Используем с незаконченными действиями: Я живу здесь 5 лет (до сих пор живу).<br><b>For (в течение):</b> Период времени (for 5 years, for a month).<br><b>Since (с тех пор как):</b> Точка отсчета (since 2010, since Monday, since I was a child).</div></details>
+                <details><summary>4. Been to vs Gone to</summary><div class="details-body">He has <b>gone</b> to London (Он уехал в Лондон и он сейчас там).<br>He has <b>been</b> to London (Он побывал в Лондоне и уже вернулся, это его жизненный опыт).</div></details>`
+            },
+            past_perfect: {
+                title: "Past Perfect",
+                formula: `(+) S + had + V3/V(ed)\n<div class="example-text">The train had left when I arrived.</div>\n(-) S + hadn't + V3\n(?) Had + S + V3?`,
+                rule: `⏪ <b>Предпрошедшее время (Самое старое прошлое).</b>
+                <details><summary>1. Использование (Два действия в прошлом)</summary><div class="details-body">Если в прошлом случилось два события, то действие, которое случилось САМЫМ ПЕРВЫМ, ставится в Past Perfect. Более позднее - в Past Simple.<br><i>Когда я пришел на станцию (позже), поезд УЖЕ УЕХАЛ (раньше).</i> -> The train <b>had left</b> when I arrived.</div></details>
+                <details><summary>2. Маркеры и Косвенная речь</summary><div class="details-body">Маркеры: <b>by</b> 5 o'clock (к 5 часам), <b>after, before</b>.<br>Часто используется в косвенной речи, когда Present Perfect или Past Simple сдвигаются на шаг назад в прошлое: He said that he <b>had finished</b> his work.</div></details>`
+            },
+            going_to: {
+                title: "To be going to (Планы)",
+                formula: `S + am/is/are + going to + V\n<span class="example-text">I am going to read.</span>\n(-): I am not going to...\n(?): Are you going to...?`,
+                rule: `📝 <b>100% ПЛАН или намерение! (Собираться что-то сделать).</b>
+                <details><summary>1. Разница с WILL и Present Continuous</summary><div class="details-body"><b>Will:</b> Спонтанное решение (Только что решил).<br><b>Going to:</b> Личное намерение/план, обдуманный заранее (I am going to visit grandma).<br><b>Present Continuous:</b> 100% договоренность с билетами (We are flying).</div></details>
+                <details><summary>2. Предсказания с доказательствами</summary><div class="details-body">Если мы видим 100% признак того, что что-то случится, используем going to. <i>Небо черное — it is going to rain. Он бежит, не глядя под ноги — he is going to fall.</i></div></details>
+                <details><summary>3. Was / Were going to (Сорвавшиеся планы)</summary><div class="details-body">Используется для планов в прошлом, которые не сбылись. <i>I was going to do my homework, but I fell asleep (Я собирался сделать домашку, но уснул).</i></div></details>`
+            },
+            used_to: {
+                title: "Used to",
+                formula: `(+) S + used to + V\n<span class="example-text">I used to play tennis.</span>\n(-) S + didn't use to + V\n<span class="example-text">I didn't use to like olives.</span>\n(?) Did + S + use to + V?`,
+                rule: `✂️ <b>Привычка, которую БРОСИЛИ!</b>
+                <details><summary>1. Правило использования</summary><div class="details-body">Действие или состояние было регулярным в прошлом, но сейчас БОЛЬШЕ НЕ АКТУАЛЬНО. <i>Раньше я ел песок (I used to eat sand), а теперь нет! Раньше у меня были длинные волосы (I used to have long hair).</i></div></details>
+                <details><summary>2. Used to vs Would</summary><div class="details-body"><b>Would</b> тоже переводится как "бывало, раньше", но используется ТОЛЬКО для действий (I would visit my grandma). Для состояний (have, be, love, live) would использовать НЕЛЬЗЯ! <i>I used to live in London (Нельзя: I would live).</i></div></details>`
+            },
+            modals_1: {
+                title: "Модальные (Can / Must / May)",
+                formula: `S + modal + V (БЕЗ TO!)\n<span class="example-text">Matvey can swim.</span>\n(-) cannot (can't) / must not (mustn't)\n(?) Can I? / Must we?`,
+                rule: `💪 <b>Глаголы-боссы (Не нужны помощники do/does).</b>
+                <details><summary>1. Главное правило</summary><div class="details-body">Они сами делают вопросы и отрицания. И после них мы НИКОГДА не ставим частицу 'to'! (Исключение: have to, ought to). Окончание -s для he/she тоже не ставится!</div></details>
+                <details><summary>2. CAN / COULD</summary><div class="details-body"><b>Физическая способность или умение.</b> <i>I can swim.</i> Прошедшее время: Could (мог). Эквивалент для всех времен: <b>to be able to</b> (I will be able to fly - я смогу летать).</div></details>
+                <details><summary>3. MUST (Должен)</summary><div class="details-body"><b>Строгий приказ или внутренний долг.</b> <i>I must do my homework (Я сам понимаю, что обязан).</i><br>Также <b>Дедукция (догадка на 99%)</b>: <i>He must be tired (Он, должно быть, устал).</i></div></details>
+                <details><summary>4. MAY / MIGHT (Разрешение и Вероятность)</summary><div class="details-body"><b>Разрешение (вежливо):</b> <i>May I come in? (Можно войти?).</i><br><b>Вероятность:</b> <i>It may rain today (Возможно, пойдет дождь - 50%). Might - вероятность еще меньше (30%).</i></div></details>`
+            },
+            modals_2: {
+                title: "Should / Have to",
+                formula: `Should + V (БЕЗ TO)\n<span class="example-text">You should sleep more.</span>\nHave to / Has to + V\n<span class="example-text">I have to wear a uniform.</span>\n(-) don't have to / doesn't have to`,
+                rule: `💡 <b>Советы и Вынужденность</b>
+                <details><summary>1. Should (Добрый совет)</summary><div class="details-body">Переводится как "следует, стоит". Это рекомендация, а не приказ. <i>You look tired. You should go to bed. (Тебе стоит лечь спать).</i> Ему не нужны помощники для вопросов и минусов.</div></details>
+                <details><summary>2. Have to (Приходится)</summary><div class="details-body">Вынужденность из-за внешних обстоятельств, правил, законов. Это не мой личный выбор. <i>'I have to wear a uniform at school' (таковы правила школы).</i><br>❗️Глагол Have to использует помощников do/does/did для вопросов! <i>Do you have to go?</i></div></details>
+                <details><summary>3. Mustn't vs Don't have to (ОЧЕНЬ ВАЖНО)</summary><div class="details-body"><b>Mustn't</b> = СТРОГИЙ ЗАПРЕТ! Нельзя этого делать. <i>You mustn't smoke here.</i><br><b>Don't have to</b> = НЕ ОБЯЗАТЕЛЬНО / НЕТ НЕОБХОДИМОСТИ. Можешь делать, если хочешь, но не обязан. <i>You don't have to get up early on Sunday.</i></div></details>`
+            },
+            prepositions_place: {
+                title: "Предлоги Места",
+                formula: "in - внутри\non - на плоскости\nat - в точке / у\nunder, behind, in front of\nnext to, between, among\nabove, below, opposite",
+                rule: `📍 <b>Пространство вокруг нас.</b>
+                <details><summary>1. Разница In, On, At</summary><div class="details-body"><b>IN (Внутри объема):</b> В комнате, в сумке, города/страны (in London), в воде (in the sea).<br><b>ON (На плоскости):</b> На столе, на стене, на полу, острова (on Cyprus).<br><b>AT (Точка/Событие):</b> At school, at work, at the bus stop, at the door, at the party.</div></details>
+                <details><summary>2. Специфические пары</summary><div class="details-body"><b>Between vs Among:</b> Between - строго между двумя (между двумя деревьями). Among - среди толпы/многих.<br><b>Above vs On:</b> On - лежит и касается. Above - висит в пространстве выше (лампа над столом).<br><b>In the office vs At work:</b> In the office - физически внутри здания. At work - в статусе "я работаю", можно и удаленно.</div></details>`
+            },
+            prepositions_time: {
+                title: "Предлоги Времени",
+                formula: `IN + месяца, года, сезоны\nON + дни недели и даты\nAT + часы и праздники`,
+                rule: `⏰ <b>Пирамида времени.</b>
+                <details><summary>1. Широкое, Среднее, Точное</summary><div class="details-body"><b>IN (Широкое):</b> Года (in 2026), месяцы (in May), сезоны, части дня (in the morning, afternoon, evening).<br><b>ON (Среднее):</b> Везде, где есть слово "день" (day) или дата. On Monday, on my birthday, on May 5th.<br><b>AT (Точное):</b> Часы (at 5 o'clock). Праздники БЕЗ слова day (at Christmas). Исключения: at night, at the weekend.</div></details>
+                <details><summary>2. In time vs On time</summary><div class="details-body"><b>On time:</b> Точно по расписанию, минута в минуту (Поезд прибыл on time).<br><b>In time:</b> В запасом времени, успел до дедлайна (Приехал in time, чтобы выпить кофе перед уроком).</div></details>
+                <details><summary>3. Нулевой предлог (Когда ничего не ставим)</summary><div class="details-body">Перед словами <b>this, that, next, last, every</b> предлоги in/on/at НЕ СТАВЯТСЯ!<br><i>last week (а не in last week), next Monday (а не on next Monday).</i></div></details>`
+            },
+            prepositions_movement: {
+                title: "Предлоги Движения",
+                formula: "to - К (направление)\ninto - внутрь чего-то\nout of - из (наружу)\nthrough - сквозь\nacross - поперек\nover - над/перепрыгнуть\nalong - вдоль\npast - мимо",
+                rule: `🏃‍♂️ <b>Двигаемся!</b>
+                <details><summary>1. Примеры использования</summary><div class="details-body"><b>to:</b> направление в точку (go to school). Исключение: go home (без to).<br><b>into / out of:</b> входим внутрь (walk into the room) / выходим из объема (take out of the box).<br><b>through:</b> СКВОЗЬ темный лес, туннель (go through the forest).<br><b>across:</b> переходим дорогу по поверхности (walk across the road).<br><b>along:</b> идем вдоль реки/дороги.</div></details>
+                <details><summary>2. Arrive In vs Arrive At</summary><div class="details-body">Мы прибываем (arrive) по-разному:<br><b>Arrive IN:</b> в большую локацию (страну, город) - arrive in London.<br><b>Arrive AT:</b> в мелкую локацию (аэропорт, станция, отель) - arrive at the airport.</div></details>`
+            },
+            possessive: {
+                title: "Притяжательный падеж ('s)",
+                formula: `Ед. число: + 's (boy's dog)\nМн. число на -s: + ' (boys' dog)\nИсключения мн.ч: + 's (men's)\nНеодушевленные: of (leg of the table)`,
+                rule: `🎁 <b>Чья это вещь?</b>
+                <details><summary>1. Одушевленные (Люди и Животные)</summary><div class="details-body">Ставим апостроф + s (Tom's book, cat's toy). Если слово во множественном и уже заканчивается на S, ставим ТОЛЬКО апостроф (the dogs' toys - игрушки собак). Исключения мн.ч берут 's (children's books).</div></details>
+                <details><summary>2. Неодушевленные предметы (Предлог OF)</summary><div class="details-body">Для вещей мы не используем 's. Мы используем предлог <b>OF</b> (кого/чего).<br><i>Ножка стола - The leg <b>of</b> the table (не table's leg). Конец фильма - The end of the film.</i><br>Исключения: время и дистанция (today's newspaper, a mile's distance).</div></details>
+                <details><summary>3. Два владельца (Tom and Mary)</summary><div class="details-body">Если вещь принадлежит обоим, 's ставим только к последнему имени: <i>Tom and Mary's car (У них одна машина на двоих).</i><br>Если у каждого своя, ставим обоим: <i>Tom's and Mary's cars.</i></div></details>`
+            },
+            passive_present: {
+                title: "Passive Voice (Present)",
+                formula: `(+) Obj + am/is/are + V3/V(ed)\n<span class="example-text">The letter is written everyday.</span>\n(-) Obj + am/is/are + not + V3\n(?) Am/is/are + Obj + V3?`,
+                rule: `👻 <b>Предмет САМ ничего не делает, действие совершают НАД НИМ.</b>
+                <details><summary>1. Актив vs Пассив</summary><div class="details-body"><b>Актив:</b> Я ем яблоко каждый день (I eat an apple). Подлежащее делает действие.<br><b>Пассив:</b> Яблоко съедают каждый день (The apple <b>is eaten</b>). Яблоко не само себя ест!</div></details>
+                <details><summary>2. Предлоги BY и WITH</summary><div class="details-body">Если мы хотим сказать, КЕМ или ЧЕМ сделано действие:<br><b>By (Кем):</b> живое лицо или автор. <i>The book is written <b>by</b> me.</i><br><b>With (Чем):</b> инструмент или материал. <i>The bread is cut <b>with</b> a knife. The cake is filled <b>with</b> cream.</i></div></details>`
+            },
+            passive_past: {
+                title: "Passive Voice (Past)",
+                formula: `(+) Obj + was/were + V3/V(ed)\n<span class="example-text">The letter was written yesterday.</span>\n(-) Obj + was/were + not + V3\n(?) Was/were + Obj + V3?`,
+                rule: `👻 <b>Действие совершили над предметом в ПРОШЛОМ.</b>
+                <details><summary>1. Использование</summary><div class="details-body"><i>Пример: Эту книгу написали в 1990 году.</i> Книга не писала сама себя! Поэтому: The book <b>was written</b> in 1990. Используем помощники прошлого was/were + 3 форма глагола.</div></details>
+                <details><summary>2. Глаголы с двумя дополнениями</summary><div class="details-body">Если глагол дает кому-то что-то (give, send, show), можно сделать два разных пассива:<br><i>I was given a book. (Мне дали книгу - это звучит по-английски лучше всего!).<br>A book was given to me. (Книга была дана мне).</i></div></details>`
+            },
+            adjectives: {
+                title: "Степени сравнения",
+                formula: `Короткие: +er (taller) | the +est\nДлинные: more +... | the most +...`,
+                rule: `📏 <b>Сравниваем предметы!</b>
+                <details><summary>1. Короткие и Длинные слова</summary><div class="details-body"><b>1 слог (fast):</b> fast - faster (быстрее) - the fastest (самый быстрый). Если кончается на согл-глас-согл (big), последняя удваивается (bigger).<br><b>Много слогов (beautiful):</b> beautiful - <b>more</b> beautiful - <b>the most</b> beautiful.</div></details>
+                <details><summary>2. Исключения (Обязательно знать!)</summary><div class="details-body">good - better - the best (хороший - лучше - лучший)<br>bad - worse - the worst (плохой)<br>far - farther / further - the farthest / furthest (далекий)<br>little - less - the least (мало)</div></details>
+                <details><summary>3. Конструкция As ... As (Такой же как)</summary><div class="details-body">Для равенства. Прилагательное внутри НЕ МЕНЯЕТСЯ! <i>He is <b>as</b> tall <b>as</b> my brother (Он такой же высокий, как мой брат). He is not <b>so</b> tall <b>as</b>... (не такой высокий, как...).</i></div></details>
+                <details><summary>4. Усилители (Much)</summary><div class="details-body">Перед сравнительной степенью можно поставить much/a lot (намного). <i>This book is <b>much better</b> (Эта книга намного лучше).</i></div></details>`
+            },
+            conditionals_0_1: {
+                title: "Conditionals (0 & 1)",
+                formula: `Zero (Факт): If + Pr.Simple, Pr.Simple\nFirst (План): If + Pr.Simple, Future Simple (will)`,
+                rule: `🤔 <b>Условные предложения: Что будет, ЕСЛИ... ?</b>
+                <details><summary>1. Тип 0 (Законы природы, 100% факты)</summary><div class="details-body">В обеих частях настоящее время (Present Simple). <i>Если нагреть лед, он тает. (If you heat ice, it melts).</i></div></details>
+                <details><summary>2. Тип 1 (Реальное условие на будущее)</summary><div class="details-body">Если я сделаю домашку, я пойду гулять.<br>❗️ <b>СУПЕР ПРАВИЛО:</b> После слова <b>IF (если)</b> или <b>WHEN (когда)</b> мы НИКОГДА не ставим WILL! Будущее время ставим только в главной части.<br><i>Правильно: If I <b>do</b> my homework, I <b>will go</b> for a walk. (Нельзя: If I will do...).</i></div></details>
+                <details><summary>3. Слово UNLESS (Если не)</summary><div class="details-body">Unless уже содержит в себе отрицание (If not). Поэтому после него глагол стоит в плюсе (+).<br><i><b>Unless</b> you hurry, you will miss the bus (Если ты НЕ поторопишься...). Равносильно: If you <b>don't</b> hurry...</i></div></details>`
+            },
+            wh_questions: {
+                title: "Специальные вопросы (Wh-)",
+                formula: `Who (Кто), What (Что/Какой), Where (Где/Куда), When (Когда), Why (Почему), How (Как), How many/much (Сколько)`,
+                rule: `❓ <b>Порядок слов в вопросах!</b>
+                <details><summary>1. Стандартный порядок</summary><div class="details-body">Wh-слово всегда стоит на САМОМ ПЕРВОМ месте!<br>Формула: <b>Wh-слово + Помощник (do/is/did) + Подлежащее + Действие?</b><br><i>Where do you live? Why are you crying?</i></div></details>
+                <details><summary>2. Вопрос к подлежащему (WHO)</summary><div class="details-body">Исключение! Вопросу "Кто?" (Who) помощники do/does/did <b>не нужны</b>! Глагол ведет себя так, как будто Who - это He/She.<br><i>Who <b>opened</b> the door? (А не Who did open). Who <b>likes</b> apples? (А не Who does like).</i></div></details>
+                <details><summary>3. Предлоги в конце вопроса</summary><div class="details-body">В русском предлоги стоят в начале ("С кем ты идешь?"). В английском они улетают в самый конец вопроса!<br><i><b>Who</b> are you going <b>with</b>? <b>What</b> are you looking <b>at</b>? <b>Where</b> are you <b>from</b>?</i></div></details>`
+            }
+        };
+
+        // --- БАЗА 200 НЕПРАВИЛЬНЫХ ГЛАГОЛОВ ---
+        const irregularVerbs = [
+            ["be","was/were","been","быть, находиться"],["bear","bore","born(e)","носить, рождать"],["beat","beat","beaten","бить"],["become","became","become","становиться"],["begin","began","begun","начинать"],["bend","bent","bent","гнуть"],["bet","bet","bet","держать пари"],["bite","bit","bitten","кусать"],["bleed","bled","bled","кровоточить"],["blow","blew","blown","дуть"],["break","broke","broken","ломать"],["bring","brought","brought","приносить"],["build","built","built","строить"],["burn","burnt","burnt","гореть, жечь"],["burst","burst","burst","взрываться"],["buy","bought","bought","покупать"],["catch","caught","caught","ловить, хватать"],["choose","chose","chosen","выбирать"],["come","came","come","приходить"],["cost","cost","cost","стоить"],["creep","crept","crept","ползать"],["cut","cut","cut","резать"],["deal","dealt","dealt","иметь дело"],["dig","dug","dug","копать"],["do","did","done","делать"],["draw","drew","drawn","рисовать, тащить"],["dream","dreamt","dreamt","мечтать, спать"],["drink","drank","drunk","пить"],["drive","drove","driven","водить (авто)"],["eat","ate","eaten","есть, кушать"],["fall","fell","fallen","падать"],["feed","fed","fed","кормить"],["feel","felt","felt","чувствовать"],["fight","fought","fought","бороться, драться"],["find","found","found","находить"],["flee","fled","fled","бежать, спасаться"],["fly","flew","flown","летать"],["forbid","forbade","forbidden","запрещать"],["forget","forgot","forgotten","забывать"],["forgive","forgave","forgiven","прощать"],["freeze","froze","frozen","замерзать"],["get","got","got","получать, добираться"],["give","gave","given","давать"],["go","went","gone","идти, ехать"],["grow","grew","grown","расти"],["hang","hung","hung","висеть, вешать"],["have","had","had","иметь"],["hear","heard","heard","слышать"],["hide","hid","hidden","прятать"],["hit","hit","hit","ударять"],["hold","held","held","держать"],["hurt","hurt","hurt","ранить, болеть"],["keep","kept","kept","хранить, держать"],["kneel","knelt","knelt","стоять на коленях"],["know","knew","known","знать"],["lay","laid","laid","класть"],["lead","led","led","вести, руководить"],["learn","learnt","learnt","учить"],["leave","left","left","покидать, оставлять"],["lend","lent","lent","одалживать"],["let","let","let","позволять"],["lie","lay","lain","лежать"],["light","lit","lit","зажигать"],["lose","lost","lost","терять"],["make","made","made","делать, создавать"],["mean","meant","meant","означать"],["meet","met","met","встречать"],["pay","paid","paid","платить"],["put","put","put","класть, ставить"],["read","read","read","читать"],["ride","rode","ridden","ездить верхом"],["ring","rang","rung","звонить"],["rise","rose","risen","подниматься"],["run","ran","run","бежать"],["say","said","said","сказать"],["see","saw","seen","видеть"],["seek","sought","sought","искать"],["sell","sold","sold","продавать"],["send","sent","sent","посылать"],["set","set","set","устанавливать"],["sew","sewed","sewn","шить"],["shake","shook","shaken","трясти"],["shine","shone","shone","светить"],["shoot","shot","shot","стрелять"],["show","showed","shown","показывать"],["shrink","shrank","shrunk","сжиматься"],["shut","shut","shut","закрывать"],["sing","sang","sung","петь"],["sink","sank","sunk","тонуть"],["sit","sat","sat","сидеть"],["sleep","slept","slept","спать"],["slide","slid","slid","скользить"],["smell","smelt","smelt","пахнуть, нюхать"],["speak","spoke","spoken","говорить"],["spell","spelt","spelt","произносить по буквам"],["spend","spent","spent","тратить"],["spill","spilt","spilt","проливать"],["spin","spun","spun","крутить"],["spit","spat","spat","плевать"],["split","split","split","разделять"],["spoil","spoilt","spoilt","портить"],["spread","spread","spread","распространять"],["spring","sprang","sprung","прыгать"],["stand","stood","stood","стоять"],["steal","stole","stolen","красть"],["stick","stuck","stuck","приклеивать"],["sting","stung","stung","жалить"],["stink","stank","stunk","вонять"],["strike","struck","struck","бастовать, ударять"],["swear","swore","sworn","клясться, ругаться"],["sweep","swept","swept","мести"],["swell","swelled","swollen","опухать"],["swim","swam","swum","плавать"],["swing","swung","swung","качаться"],["take","took","taken","брать"],["teach","taught","taught","обучать"],["tear","tore","torn","рвать"],["tell","told","told","рассказывать"],["think","thought","thought","думать"],["throw","threw","thrown","бросать"],["understand","understood","understood","понимать"],["wake","woke","woken","будить, просыпаться"],["wear","wore","worn","носить (одежду)"],["weep","wept","wept","плакать"],["win","won","won","побеждать"],["wind","wound","wound","наматывать"],["write","wrote","written","писать"]
+        ];
+
+        // --- 2. МНОГОСТРАНИЧНОСТЬ (СЛАЙДЫ) И ИСТОРИЯ ---
+        let slides = [{ id: Date.now(), drawing: '', draggables: [], bg: 'bg-lines' }];
+        let currentSlideIndex = 0;
+        
+        let historyStack = [];
+        let historyStep = -1;
+        let isRestoringHistory = false;
+
+        const canvas = document.getElementById('whiteboard');
+        const ctx = canvas.getContext('2d');
+        const blindPreviewCanvas = document.getElementById('blindPreviewCanvas');
+        const blindCtx = blindPreviewCanvas.getContext('2d');
+        const laserCanvas = document.getElementById('laserCanvas');
+        const laserCtx = laserCanvas.getContext('2d');
+        const canvasContainer = document.getElementById('boardArea');
+        const draggablesContainer = document.getElementById('draggablesContainer');
+        
+        let currentMode = 'pen'; 
+        let isDrawing = false;
+        let isDrawingBlind = false;
+        let startX, startY, lastX, lastY; // Добавили lastX, lastY для прозрачного маркера
+
+        function resizeCanvas() {
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            canvas.width = canvasContainer.clientWidth; canvas.height = canvasContainer.clientHeight;
+            laserCanvas.width = canvasContainer.clientWidth; laserCanvas.height = canvasContainer.clientHeight;
+            blindPreviewCanvas.width = canvasContainer.clientWidth; blindPreviewCanvas.height = canvasContainer.clientHeight;
+            ctx.putImageData(imgData, 0, 0); updateContextSettings();
+        }
+        window.addEventListener('resize', resizeCanvas); setTimeout(resizeCanvas, 50);
+
+        function updateContextSettings(targetCtx = ctx) {
+            targetCtx.lineCap = 'round'; targetCtx.lineJoin = 'round';
+            targetCtx.shadowBlur = 0; targetCtx.globalAlpha = 1.0;
+            if (currentMode === 'eraser') { 
+                targetCtx.globalCompositeOperation = 'destination-out'; targetCtx.lineWidth = document.getElementById('lineWidth').value * 5; 
+            } else if (currentMode === 'neon') {
+                targetCtx.globalCompositeOperation = 'source-over'; 
+                targetCtx.strokeStyle = document.getElementById('colorPicker').value; 
+                targetCtx.lineWidth = document.getElementById('lineWidth').value;
+                targetCtx.shadowColor = document.getElementById('colorPicker').value;
+                targetCtx.shadowBlur = 15;
+            } else if (currentMode === 'highlighter') {
+                targetCtx.globalCompositeOperation = 'multiply';
+                targetCtx.strokeStyle = document.getElementById('colorPicker').value; 
+                targetCtx.lineWidth = document.getElementById('lineWidth').value * 4;
+                targetCtx.globalAlpha = 0.1; // Сделали маркер супер-бледным
+            } else { 
+                targetCtx.globalCompositeOperation = 'source-over'; targetCtx.strokeStyle = document.getElementById('colorPicker').value; targetCtx.lineWidth = document.getElementById('lineWidth').value; 
+            }
+        }
+
+        // Функция для рисования красивых стрелок (прямых и дуг)
+        function drawArrow(ctxToDraw, fromx, fromy, tox, toy, isCurve) {
+            const headlen = 15; 
+            const angle = Math.atan2(toy - fromy, tox - fromx);
+            ctxToDraw.beginPath();
+            ctxToDraw.moveTo(fromx, fromy);
+            
+            if (isCurve) {
+                // Высчитываем контрольную точку для дуги
+                const dx = tox - fromx; const dy = toy - fromy;
+                const cx = fromx + dx/2 - dy/3; const cy = fromy + dy/2 + dx/3;
+                ctxToDraw.quadraticCurveTo(cx, cy, tox, toy);
+                const curveAngle = Math.atan2(toy - cy, tox - cx);
+                ctxToDraw.stroke();
+                
+                // Наконечник стрелки
+                ctxToDraw.beginPath(); ctxToDraw.moveTo(tox, toy);
+                ctxToDraw.lineTo(tox - headlen * Math.cos(curveAngle - Math.PI / 6), toy - headlen * Math.sin(curveAngle - Math.PI / 6));
+                ctxToDraw.moveTo(tox, toy);
+                ctxToDraw.lineTo(tox - headlen * Math.cos(curveAngle + Math.PI / 6), toy - headlen * Math.sin(curveAngle + Math.PI / 6));
+            } else {
+                ctxToDraw.lineTo(tox, toy);
+                ctxToDraw.stroke();
+                
+                // Наконечник стрелки
+                ctxToDraw.beginPath(); ctxToDraw.moveTo(tox, toy);
+                ctxToDraw.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+                ctxToDraw.moveTo(tox, toy);
+                ctxToDraw.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            }
+            ctxToDraw.stroke();
+        }
+
+        // --- РИСОВАНИЕ ---
+        function getMousePos(evt) { const rect = canvas.getBoundingClientRect(); return { x: evt.clientX - rect.left, y: evt.clientY - rect.top }; }
+        canvasContainer.addEventListener('mousedown', (e) => {
+            const pos = getMousePos(e);
+            
+            if (currentMode === 'smart_eraser') {
+                const target = e.target.closest('.draggable') || e.target.closest('.blind-box');
+                if (target) { target.remove(); } else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+                recordHistory(); return;
+            }
+
+            if (currentMode === 'blind') { 
+                if (e.target.closest('.blind-box')) return; 
+                isDrawingBlind = true; startX = pos.x; startY = pos.y; return; 
+            }
+            
+            if(e.target.closest('.draggable') || e.target.closest('.blind-box')) return;
+            
+            if (currentMode === 'text') { createDraggable('text', 'Текст...', pos.x, pos.y); setMode('pen'); recordHistory(); return; }
+            if (currentMode === 'laser' || currentMode === 'spotlight') return;
+            if (currentMode === 'arrow' || currentMode === 'curve_arrow') { isDrawing = true; startX = pos.x; startY = pos.y; return; }
+            
+            isDrawing = true; 
+            updateContextSettings(ctx); 
+            ctx.beginPath(); 
+            ctx.moveTo(pos.x, pos.y);
+            lastX = pos.x; lastY = pos.y; // ИСПРАВЛЕНИЕ: Запоминаем последнюю точку для маркера
+        });
+
+        canvasContainer.addEventListener('mousemove', (e) => {
+            const pos = getMousePos(e);
+            
+            if (currentMode === 'laser') {
+                laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height); laserCtx.beginPath(); laserCtx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
+                laserCtx.fillStyle = 'rgba(239, 68, 68, 0.8)'; laserCtx.shadowColor = 'red'; laserCtx.shadowBlur = 15; laserCtx.fill(); return;
+            }
+            
+            if (currentMode === 'spotlight') {
+                laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+                laserCtx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+                laserCtx.fillRect(0, 0, laserCanvas.width, laserCanvas.height);
+                laserCtx.globalCompositeOperation = 'destination-out';
+                laserCtx.beginPath(); laserCtx.arc(pos.x, pos.y, 120, 0, Math.PI * 2); laserCtx.fill();
+                laserCtx.globalCompositeOperation = 'source-over'; return;
+            }
+            
+            if (currentMode !== 'laser' && currentMode !== 'spotlight' && currentMode !== 'arrow' && currentMode !== 'curve_arrow') {
+                laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+            }
+            
+            if (isDrawingBlind) {
+                blindCtx.clearRect(0, 0, blindPreviewCanvas.width, blindPreviewCanvas.height);
+                blindCtx.fillStyle = '#4B5563'; blindCtx.fillRect(startX, startY, pos.x - startX, pos.y - startY); return;
+            }
+
+            if (!isDrawing) return; 
+            
+            if (currentMode === 'arrow' || currentMode === 'curve_arrow') {
+                laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+                updateContextSettings(laserCtx);
+                drawArrow(laserCtx, startX, startY, pos.x, pos.y, currentMode === 'curve_arrow');
+                return;
+            }
+
+            // ИСПРАВЛЕНИЕ ПРОЗРАЧНОСТИ: Отрисовываем только короткий новый отрезок, чтобы слои маркера не умножались
+            ctx.beginPath();
+            ctx.moveTo(lastX, lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            lastX = pos.x; lastY = pos.y;
+        });
+
+        canvasContainer.addEventListener('mouseup', (e) => { 
+            if (isDrawingBlind) {
+                isDrawingBlind = false; blindCtx.clearRect(0, 0, blindPreviewCanvas.width, blindPreviewCanvas.height);
+                const pos = getMousePos(e); const width = Math.abs(pos.x - startX); const height = Math.abs(pos.y - startY);
+                if (width > 20 && height > 20) { createBlind(Math.min(startX, pos.x), Math.min(startY, pos.y), width, height); recordHistory(); }
+            } else if (isDrawing) {
+                isDrawing = false; 
+                if (currentMode === 'arrow' || currentMode === 'curve_arrow') {
+                    const pos = getMousePos(e);
+                    laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
+                    updateContextSettings(ctx);
+                    drawArrow(ctx, startX, startY, pos.x, pos.y, currentMode === 'curve_arrow');
+                }
+                recordHistory();
+            }
+        });
+
+        canvasContainer.addEventListener('mouseout', () => { isDrawing = false; isDrawingBlind = false; laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height); blindCtx.clearRect(0, 0, blindPreviewCanvas.width, blindPreviewCanvas.height);});
+
+        function createBlind(x, y, w, h) {
+            const el = document.createElement('div'); el.className = 'blind-box';
+            el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px';
+            el.onclick = function(e) { this.remove(); recordHistory(); e.stopPropagation(); };
+            draggablesContainer.appendChild(el);
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.btn-tool').forEach(btn => btn.classList.remove('active-tool'));
+            
+            let btnId = 'btnPen';
+            if (mode === 'eraser') btnId = 'btnEraser';
+            else if (mode === 'text') btnId = 'btnText';
+            else if (mode === 'laser') btnId = 'btnLaser';
+            else if (mode === 'blind') btnId = 'btnBlind';
+            else if (mode === 'neon') btnId = 'btnNeon';
+            else if (mode === 'highlighter') btnId = 'btnHighlighter';
+            else if (mode === 'arrow') btnId = 'btnArrow';
+            else if (mode === 'curve_arrow') btnId = 'btnCurveArrow';
+            else if (mode === 'spotlight') btnId = 'btnSpotlight';
+            else if (mode === 'smart_eraser') btnId = 'btnSmartEraser';
+            
+            const activeBtn = document.getElementById(btnId);
+            if (activeBtn) activeBtn.classList.add('active-tool');
+            
+            canvasContainer.style.cursor = mode === 'text' ? 'text' : (mode === 'laser' || mode === 'spotlight' ? 'none' : (mode === 'smart_eraser' ? 'pointer' : 'crosshair'));
+            
+            if (mode === 'blind') canvasContainer.classList.add('mode-blind');
+            else canvasContainer.classList.remove('mode-blind');
+        }
+        
+        document.getElementById('btnPen').onclick = () => setMode('pen');
+        document.getElementById('btnNeon').onclick = () => setMode('neon');
+        document.getElementById('btnHighlighter').onclick = () => setMode('highlighter');
+        document.getElementById('btnArrow').onclick = () => setMode('arrow');
+        document.getElementById('btnCurveArrow').onclick = () => setMode('curve_arrow');
+        document.getElementById('btnEraser').onclick = () => setMode('eraser');
+        document.getElementById('btnSmartEraser').onclick = () => setMode('smart_eraser');
+        document.getElementById('btnText').onclick = () => setMode('text');
+        document.getElementById('btnLaser').onclick = () => setMode('laser');
+        document.getElementById('btnSpotlight').onclick = () => setMode('spotlight');
+        document.getElementById('btnBlind').onclick = () => setMode('blind');
+
+        // Логика Интерактивных Стикеров
+        document.getElementById('btnSticker').onclick = () => {
+            const colors = ['#FEF08A', '#A7F3D0', '#FECACA', '#BFDBFE', '#E9D5FF']; // Желтый, зеленый, красный, синий, фиолетовый
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const stickerHtml = `<div style="background: ${randomColor}; width: 100%; height: 100%; padding: 12px; box-sizing: border-box; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; font-size: 16px; color: #1F2937; outline: none; border-radius: 2px; box-shadow: 2px 4px 10px rgba(0,0,0,0.15);" contenteditable="true">Стикер...</div>`;
+            
+            const el = createDraggable('image', 'sticker_note', canvasContainer.clientWidth/2 - 75, 150, '', stickerHtml);
+            
+            // Очищаем стандартные рамки карточки
+            el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
+            const title = el.querySelector('h4'); if (title) title.remove();
+            
+            el.style.width = '150px'; el.style.height = '150px';
+            
+            // Скрытый ресайзер (уголок)
+            const resizer = document.createElement('div');
+            resizer.style.cssText = `position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; background: rgba(0,0,0,0.1); cursor: nwse-resize; z-index: 10; clip-path: polygon(100% 0, 100% 100%, 0 100%);`;
+            el.appendChild(resizer);
+            
+            resizer.addEventListener('mousedown', (mouseEvent) => {
+                mouseEvent.stopPropagation();
+                const startW = el.offsetWidth; const startH = el.offsetHeight;
+                const startX = mouseEvent.clientX; const startY = mouseEvent.clientY;
+                
+                const onMouseMove = (moveEvt) => {
+                    let newW = startW + (moveEvt.clientX - startX);
+                    let newH = startH + (moveEvt.clientY - startY);
+                    if (newW > 80) el.style.width = newW + 'px';
+                    if (newH > 80) el.style.height = newH + 'px';
+                };
+                const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); recordHistory(); };
+                document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+            });
+            setMode('pen'); recordHistory();
+        };
+        
+        function closeAllPanels() {
+            document.getElementById('emojiPanel').style.display = 'none';
+            document.getElementById('markersPanel').style.display = 'none';
+            document.getElementById('collabPanel').style.display = 'none';
+        }
+
+        // Логика панелей
+        document.getElementById('btnEmoji').onclick = () => {
+            const isVisible = document.getElementById('emojiPanel').style.display === 'grid';
+            closeAllPanels();
+            if(!isVisible) document.getElementById('emojiPanel').style.display = 'grid';
+        };
+        document.getElementById('btnMarkers').onclick = () => {
+            const isVisible = document.getElementById('markersPanel').style.display === 'flex';
+            closeAllPanels();
+            if(!isVisible) document.getElementById('markersPanel').style.display = 'flex';
+        };
+        document.getElementById('btnCollab').onclick = () => {
+            const isVisible = document.getElementById('collabPanel').style.display === 'flex';
+            closeAllPanels();
+            if(!isVisible) document.getElementById('collabPanel').style.display = 'flex';
+        };
+
+        // Глобальная переменная для отслеживания "выделенной" рамки
+        window.lastActiveMarker = null;
+
+        // Следим за пипеткой и меняем цвет "наживую"
+        document.getElementById('markerColorPicker').addEventListener('input', function(e) {
+            const newColor = this.value;
+            this.style.borderColor = newColor; // Красим ободок самой пипетки
+            
+            // Если есть активная рамка на доске - перекрашиваем её
+            if (window.lastActiveMarker && window.lastActiveMarker.parentNode) {
+                const inner = window.lastActiveMarker.querySelector('.content > div');
+                if (inner) {
+                    inner.style.setProperty('--m-color', newColor);
+                    if (inner.style.borderTopStyle === 'dashed') inner.style.borderColor = newColor;
+                }
+                const resizer = window.lastActiveMarker.querySelector('div[style*="nwse-resize"]');
+                if (resizer) resizer.style.background = newColor;
+                
+                recordHistory(); // Сохраняем изменение цвета
+            }
+        });
+
+        // Генерация живых маркеров
+        document.querySelectorAll('.marker-add-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const type = e.target.dataset.type;
+                const mColor = document.getElementById('markerColorPicker').value;
+                let markerHtml = '';
+                
+                if (type === 'neon_box') {
+                    markerHtml = `<div class="neon-marker-box" style="--m-color: ${mColor}; width: 100%; height: 100%; pointer-events: none; border-radius: 8px;"></div>`;
+                } else if (type === 'arrow_pulse') {
+                    markerHtml = `<div style="--m-color: ${mColor}; font-size: 50px; text-align: center; pointer-events: none; animation: neonPulseDyn 1s infinite; color: var(--m-color); text-shadow: 0 0 10px var(--m-color); line-height: 1;">👉</div>`;
+                } else if (type === 'spotlight_ring') {
+                    markerHtml = `<div style="width: 100%; height: 100%; border: 5px dashed ${mColor}; border-radius: 50%; pointer-events: none; box-sizing: border-box;"></div>`;
+                }
+
+                const el = createDraggable('image', 'marker_' + type, canvasContainer.clientWidth/2 - 50, 150, '', markerHtml);
+                
+                // Очищаем от зеленой подложки
+                el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
+                const title = el.querySelector('h4'); if (title) title.remove();
+                const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
+                
+                if (type === 'neon_box') { el.style.width = '200px'; el.style.height = '80px'; }
+                if (type === 'spotlight_ring') { el.style.width = '120px'; el.style.height = '120px'; }
+                if (type === 'arrow_pulse') { el.style.minWidth = '0'; el.style.width = '70px'; }
+                
+                // Только что созданная рамка становится активной (можно сразу менять цвет пипеткой)
+                window.lastActiveMarker = el;
+                // А если мы кликнем по любой старой рамке, она снова станет активной!
+                el.addEventListener('mousedown', () => { window.lastActiveMarker = el; });
+                
+                // Кастомный ресайзер для маркера (темный уголок в цвет рамки)
+                const resizer = document.createElement('div');
+                resizer.style.cssText = `position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; background: ${mColor}; opacity: 0.8; cursor: nwse-resize; z-index: 10; clip-path: polygon(100% 0, 100% 100%, 0 100%);`;
+                el.appendChild(resizer);
+                
+                resizer.addEventListener('mousedown', (mouseEvent) => {
+                    mouseEvent.stopPropagation();
+                    const startW = el.offsetWidth; const startH = el.offsetHeight;
+                    const startX = mouseEvent.clientX; const startY = mouseEvent.clientY;
+                    
+                    const onMouseMove = (moveEvt) => {
+                        let newW = startW + (moveEvt.clientX - startX);
+                        let newH = startH + (moveEvt.clientY - startY);
+                        
+                        // Если это круг фокуса, жестко сохраняем идеальные пропорции 1:1
+                        if (type === 'spotlight_ring') {
+                            const size = Math.max(newW, newH); // берем самую большую сторону
+                            if (size > 40) {
+                                el.style.width = size + 'px';
+                                el.style.height = size + 'px';
+                            }
+                        } else {
+                            if (newW > 40) el.style.width = newW + 'px';
+                            if (type !== 'arrow_pulse' && newH > 40) el.style.height = newH + 'px';
+                        }
+                    };
+                    
+                    const onMouseUp = () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        recordHistory();
+                    };
+                    
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+
+                closeAllPanels(); setMode('pen'); recordHistory();
+            };
+        });
+        
+        document.querySelectorAll('.emoji-item').forEach(em => {
+            em.onclick = (e) => {
+                // ИСПОЛЬЗУЕМ ТИП 'emoji' - он блокирует выделение текста и убирает крестик
+                createDraggable('emoji', e.target.innerText, canvasContainer.clientWidth/2, 150);
+                document.getElementById('emojiPanel').style.display = 'none';
+                setMode('pen');
+                recordHistory();
+            };
+        });
+        
+        // Ось времени (как перетаскиваемые карточки в зависимости от темы)
+        document.getElementById('btnTimeline').onclick = () => {
+            const topicKey = document.getElementById('topicSelector').value;
+            let title = 'Ось времени';
+            
+            // Базовый шаблон SVG-графики для карточки
+            const svgStart = `<div style="text-align: center; background: white; padding: 10px; border-radius: 8px;"><svg width="300" height="90" viewBox="0 0 300 90">
+                <defs>
+                    <marker id="arrowHead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#10B981" />
+                    </marker>
+                </defs>
+                <line x1="20" y1="60" x2="280" y2="60" stroke="#9CA3AF" stroke-width="4" />
+                <polygon points="280,55 290,60 280,65" fill="#9CA3AF" />`;
+            const svgEnd = `</svg></div>`;
+            
+            let innerSvg = '';
+
+            if (topicKey === 'past_simple') {
+                title = 'Ось: Past Simple';
+                innerSvg = `
+                    <circle cx="80" cy="60" r="8" fill="#EF4444" />
+                    <text x="80" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="#EF4444" text-anchor="middle">PAST (V2)</text>
+                    <text x="80" y="20" font-family="sans-serif" font-size="12" fill="#6B7280" text-anchor="middle">yesterday, ago</text>
+                    <line x1="200" y1="50" x2="200" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="200" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                `;
+            } else if (topicKey === 'past_continuous') {
+                title = 'Ось: Past Continuous';
+                innerSvg = `
+                    <line x1="200" y1="50" x2="200" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="200" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                    <line x1="50" y1="60" x2="130" y2="60" stroke="#8B5CF6" stroke-width="12" opacity="0.4" stroke-linecap="round"/>
+                    <circle cx="90" cy="60" r="4" fill="#EF4444" />
+                    <text x="90" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="#8B5CF6" text-anchor="middle">Процесс в прошлом</text>
+                `;
+            } else if (topicKey === 'past_perfect') {
+                title = 'Ось: Past Perfect';
+                innerSvg = `
+                    <circle cx="50" cy="60" r="8" fill="#EF4444" />
+                    <text x="50" y="40" font-family="sans-serif" font-size="12" font-weight="bold" fill="#EF4444" text-anchor="middle">Past Perf.</text>
+                    <line x1="120" y1="50" x2="120" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="120" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">Past Simple</text>
+                    <line x1="220" y1="50" x2="220" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="220" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                    <path d="M 50 60 Q 85 30 115 55" fill="none" stroke="#EF4444" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arrowHead)" />
+                `;
+            } else if (topicKey === 'present_continuous') {
+                title = 'Ось: Present Continuous';
+                innerSvg = `
+                    <line x1="200" y1="50" x2="200" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="200" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                    <line x1="160" y1="60" x2="240" y2="60" stroke="#3B82F6" stroke-width="12" opacity="0.4" stroke-linecap="round"/>
+                    <text x="200" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="#3B82F6" text-anchor="middle">В процессе (-ing)</text>
+                `;
+            } else if (topicKey === 'present_perfect') {
+                title = 'Ось: Present Perfect';
+                innerSvg = `
+                    <circle cx="80" cy="60" r="6" fill="#10B981" />
+                    <line x1="200" y1="50" x2="200" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="200" y="85" font-family="sans-serif" font-size="12" font-weight="bold" fill="#1F2937" text-anchor="middle">NOW</text>
+                    <path d="M 80 60 Q 140 20 195 55" fill="none" stroke="#10B981" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#arrowHead)" />
+                    <text x="140" y="30" font-family="sans-serif" font-size="14" font-weight="bold" fill="#10B981" text-anchor="middle">Результат</text>
+                `;
+            } else if (topicKey === 'future_simple') {
+                title = 'Ось: Future Simple';
+                innerSvg = `
+                    <line x1="120" y1="50" x2="120" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="120" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                    <circle cx="220" cy="60" r="8" fill="#F59E0B" />
+                    <text x="220" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="#F59E0B" text-anchor="middle">FUTURE (will)</text>
+                `;
+            } else if (topicKey === 'future_continuous') {
+                title = 'Ось: Future Continuous';
+                innerSvg = `
+                    <line x1="120" y1="50" x2="120" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="120" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">NOW</text>
+                    <line x1="180" y1="60" x2="260" y2="60" stroke="#F59E0B" stroke-width="12" opacity="0.4" stroke-linecap="round"/>
+                    <circle cx="220" cy="60" r="4" fill="#F59E0B" />
+                    <text x="220" y="40" font-family="sans-serif" font-size="14" font-weight="bold" fill="#F59E0B" text-anchor="middle">Процесс в будущем</text>
+                `;
+            } else {
+                title = 'Базовая ось времени';
+                innerSvg = `
+                    <line x1="80" y1="50" x2="80" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="80" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">PAST</text>
+                    <line x1="150" y1="50" x2="150" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="150" y="85" font-family="sans-serif" font-size="14" font-weight="bold" fill="#1F2937" text-anchor="middle">NOW</text>
+                    <line x1="220" y1="50" x2="220" y2="70" stroke="#4B5563" stroke-width="2" />
+                    <text x="220" y="85" font-family="sans-serif" font-size="12" fill="#4B5563" text-anchor="middle">FUTURE</text>
+                `;
+            }
+
+            const finalHtml = svgStart + innerSvg + svgEnd;
+            // Создаем перетаскиваемую карточку с SVG внутри
+            createDraggable('rule', 'timeline_custom', canvasContainer.clientWidth/2 - 170, 100, title, finalHtml);
+            setMode('pen'); // Автоматически возвращаемся к карандашу
+            recordHistory();
+        };
+
+        // Загрузка картинки на фон
+        document.getElementById('btnBgUpload').onclick = () => document.getElementById('bgImageInput').click();
+        document.getElementById('bgImageInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    canvasContainer.className = 'canvas-container';
+                    canvasContainer.style.backgroundImage = `url('${event.target.result}')`;
+                    canvasContainer.style.backgroundSize = 'contain';
+                    canvasContainer.style.backgroundRepeat = 'no-repeat';
+                    canvasContainer.style.backgroundPosition = 'center';
+                    canvasContainer.dataset.customBg = event.target.result;
+                    document.getElementById('bgSelector').value = 'custom';
+                    recordHistory();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Пожалуйста, загрузите картинку (JPG/PNG).');
+            }
+            e.target.value = ''; // очистка
+        };
+        
+        document.getElementById('btnClear').onclick = () => { if(confirm('Очистить весь слайд?')) { ctx.clearRect(0, 0, canvas.width, canvas.height); draggablesContainer.innerHTML = ''; recordHistory(); } };
+        document.getElementById('bgSelector').onchange = function() { canvasContainer.className = 'canvas-container ' + this.value; canvasContainer.style.backgroundImage = ''; delete canvasContainer.dataset.customBg; recordHistory(); };
+
+        // --- СОЗДАНИЕ КАРТОЧЕК ---
+        function createDraggable(type, contentOrTopicKey, x, y, customTitle = '', customHtml = null) {
+            const el = document.createElement('div');
+            el.className = 'draggable ' + (type === 'text' ? 'text-box' : (type === 'emoji' ? 'emoji-box' : (type === 'rule' ? 'rule-card' : 'formula-card')));
+            el.style.left = x + 'px'; el.style.top = y + 'px'; el.dataset.cardType = type;
+            
+            let displayTitle = customTitle, displayContent = contentOrTopicKey;
+            
+            if (customHtml !== null) {
+                displayContent = customHtml;
+                if (grammarData[contentOrTopicKey]) el.dataset.topicKey = contentOrTopicKey;
+            } else if ((type === 'formula' || type === 'rule') && grammarData[contentOrTopicKey]) {
+                el.dataset.topicKey = contentOrTopicKey;
+                displayTitle = customTitle || grammarData[contentOrTopicKey].title;
+                displayContent = (type === 'formula' ? grammarData[contentOrTopicKey].formula : grammarData[contentOrTopicKey].rule);
+            }
+            
+            // Крестик добавляется ТОЛЬКО если это не эмодзи
+            if (type !== 'emoji') {
+                const closeBtn = document.createElement('button'); closeBtn.className = 'close-btn'; closeBtn.innerHTML = '×';
+                closeBtn.onclick = () => { el.remove(); recordHistory(); }; el.appendChild(closeBtn);
+            }
+
+            if (type !== 'text' && type !== 'emoji') { const h4 = document.createElement('h4'); h4.contentEditable = true; h4.innerText = displayTitle; el.appendChild(h4); }
+            const contentDiv = document.createElement('div'); contentDiv.className = 'content';
+            
+            if (type === 'text') { 
+                contentDiv.innerText = displayContent; contentDiv.contentEditable = true; 
+            } else if (type === 'emoji') {
+                contentDiv.innerText = displayContent; 
+                contentDiv.style.fontSize = '45px'; // Оптимальный размер
+                contentDiv.style.cursor = 'grab';
+                contentDiv.style.userSelect = 'none'; // Отключаем выделение текста, чтобы сразу хваталось
+                el.style.minWidth = '0'; el.style.padding = '0'; el.style.background = 'transparent'; el.style.border = 'none'; el.style.boxShadow = 'none';
+            } else { 
+                contentDiv.innerHTML = displayContent; if(type === 'formula') contentDiv.contentEditable = true; 
+            }
+            
+            contentDiv.addEventListener('blur', () => { if(!isRestoringHistory) recordHistory(); }); el.appendChild(contentDiv);
+
+            draggablesContainer.appendChild(el); makeDraggableElement(el);
+            if (type === 'text') { contentDiv.focus(); document.execCommand('selectAll', false, null); }
+            el.querySelectorAll('details').forEach(d => d.addEventListener('toggle', () => { if(!isRestoringHistory) recordHistory(); })); 
+            return el;
+        }
+
+        // Глобальная переменная для удаления по кнопке
+        window.activeDraggable = null;
+
+        // Удаление выделенного элемента по кнопке Delete или Backspace
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                // Игнорируем, если курсор стоит в тексте (чтобы не удалить карточку при стирании букв внутри нее)
+                if (document.activeElement.isContentEditable || document.activeElement.tagName === 'INPUT') return;
+                
+                if (window.activeDraggable) {
+                    window.activeDraggable.remove();
+                    window.activeDraggable = null;
+                    recordHistory();
+                }
+            }
+        });
+
+        function makeDraggableElement(el) {
+            let isDraggingLoc = false, sX, sY, iX, iY;
+            el.addEventListener('mousedown', e => {
+                window.activeDraggable = el; // Запоминаем элемент, по которому кликнули
+                window.lastActiveMarker = el; // Синхронизируем и с цветом рамки
+                
+                // Подсвечиваем корзину, чтобы показать, что в неё можно кидать
+                const trash = document.getElementById('trashBin');
+                if (trash) { trash.style.opacity = '1'; trash.style.transform = 'scale(1.1)'; trash.style.background = '#FEE2E2'; }
+
+                // Блокируем перетаскивание при активной шторке, чтобы она рисовалась без сдвига карточки
+                if(currentMode === 'blind') return;
+                
+                if(e.target.closest('.close-btn') || e.target.closest('.pull-btn') || e.target.tagName === 'SUMMARY' || e.target.closest('summary') || document.activeElement === e.target) return;
+                isDraggingLoc = true; sX = e.clientX; sY = e.clientY; iX = el.offsetLeft; iY = el.offsetTop; el.style.zIndex = 1000;
+            });
+            document.addEventListener('mousemove', e => { 
+                if(!isDraggingLoc) return; 
+                el.style.left = (iX + e.clientX - sX) + 'px'; 
+                el.style.top = (iY + e.clientY - sY) + 'px'; 
+            });
+            document.addEventListener('mouseup', (e) => { 
+                // Возвращаем корзину в "спящий" режим
+                const trash = document.getElementById('trashBin');
+                if (trash) { trash.style.opacity = '0.5'; trash.style.transform = 'scale(1)'; trash.style.background = 'rgba(255, 255, 255, 0.8)'; }
+
+                if(isDraggingLoc) { 
+                    isDraggingLoc = false; el.style.zIndex = ''; 
+                    
+                    // Логика броска в корзину
+                    if (trash) {
+                        const rect = trash.getBoundingClientRect();
+                        // Проверяем, находится ли мышка над корзиной при отпускании левой кнопки
+                        if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
+                            el.remove();
+                            window.activeDraggable = null;
+                        }
+                    }
+                    recordHistory(); 
+                } 
+            });
+        }
+
+        // --- UNDO / REDO СИСТЕМА ---
+        function serializeCurrentSlide() {
+            const draggables = Array.from(draggablesContainer.children).map(el => {
+                if (el.classList.contains('blind-box')) {
+                    return { type: 'blind', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+                }
+                const openDetails = Array.from(el.querySelectorAll('details')).map((d, i) => d.open ? i : -1).filter(i => i !== -1);
+                return { type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails };
+            });
+            return { 
+                drawing: canvas.toDataURL(), 
+                draggables: draggables, 
+                bg: document.getElementById('bgSelector').value,
+                customBg: canvasContainer.dataset.customBg || null // Сохраняем загруженную картинку
+            };
+        }
+
+        function restoreSlideData(data) {
+            isRestoringHistory = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (data.drawing) { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0); updateContextSettings(); }; img.src = data.drawing; }
+            
+            document.getElementById('bgSelector').value = data.bg || 'bg-lines';
+            if (data.bg === 'custom' && data.customBg) {
+                canvasContainer.className = 'canvas-container';
+                canvasContainer.style.backgroundImage = `url('${data.customBg}')`;
+                canvasContainer.style.backgroundSize = 'contain';
+                canvasContainer.style.backgroundRepeat = 'no-repeat';
+                canvasContainer.style.backgroundPosition = 'center';
+                canvasContainer.dataset.customBg = data.customBg;
+            } else {
+                canvasContainer.className = 'canvas-container ' + (data.bg || 'bg-lines');
+                canvasContainer.style.backgroundImage = '';
+                delete canvasContainer.dataset.customBg;
+            }
+            
+            draggablesContainer.innerHTML = '';
+            data.draggables.forEach(d => {
+                if (d.type === 'blind') { createBlind(parseInt(d.left), parseInt(d.top), parseInt(d.width), parseInt(d.height)); }
+                else {
+                    const el = createDraggable(d.type, (d.type !== 'text' && d.topicKey) ? d.topicKey : d.content, parseInt(d.left), parseInt(d.top), d.title, d.type !== 'text' ? d.content : null);
+                    if(d.type === 'text') el.querySelector('.content').innerText = d.content;
+                    if(d.openDetails) { const details = el.querySelectorAll('details'); d.openDetails.forEach(index => { if(details[index]) details[index].open = true; }); }
+                }
+            });
+            isRestoringHistory = false;
+        }
+
+        function recordHistory() {
+            if(isRestoringHistory) return;
+            historyStep++;
+            historyStack.length = historyStep;
+            const state = serializeCurrentSlide();
+            historyStack.push(state);
+            saveToLocalStorage();
+            
+            // Если есть активное P2P подключение - отправляем слайд ученику
+            if (window.boardConn && window.boardConn.open) {
+                window.boardConn.send({ type: 'sync', data: state });
+            }
+        }
+
+        // --- ЛОГИКА P2P СОЕДИНЕНИЯ (ФАЗА 1) ---
+        window.boardPeer = null;
+        window.boardConn = null;
+
+        document.getElementById('btnCreateRoom').onclick = () => {
+            const statusEl = document.getElementById('collabStatus');
+            statusEl.innerText = 'Создание комнаты...';
+            // Генерируем красивый 5-значный код
+            const shortId = 'CHEF-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+            
+            window.boardPeer = new Peer(shortId);
+            
+            window.boardPeer.on('open', (id) => {
+                statusEl.innerHTML = `<span style="color:#4F46E5;">Ваш код:</span> <b>${id}</b><br>Продиктуйте ученику!`;
+            });
+            
+            window.boardPeer.on('connection', (conn) => {
+                window.boardConn = conn;
+                setupConnection();
+                statusEl.innerHTML = `<b style="color: #10B981;">🟢 Ученик подключен!</b>`;
+                // Мгновенно отправляем ученику текущий слайд
+                setTimeout(() => {
+                    window.boardConn.send({ type: 'sync', data: serializeCurrentSlide() });
+                }, 500);
+            });
+        };
+
+        document.getElementById('btnJoinRoom').onclick = () => {
+            const roomId = document.getElementById('joinRoomId').value.trim().toUpperCase();
+            if(!roomId) return;
+            
+            const statusEl = document.getElementById('collabStatus');
+            statusEl.innerText = 'Подключение...';
+            
+            window.boardPeer = new Peer();
+            window.boardPeer.on('open', () => {
+                window.boardConn = window.boardPeer.connect(roomId);
+                window.boardConn.on('open', () => {
+                    statusEl.innerHTML = `<b style="color: #10B981;">🟢 Связь установлена!</b>`;
+                    setupConnection();
+                });
+                window.boardConn.on('error', () => {
+                    statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка кода или связи</b>`;
+                });
+            });
+        };
+
+        function setupConnection() {
+            // Показываем чат при успешном соединении
+            document.getElementById('chatArea').style.display = 'flex';
+            
+            window.boardConn.on('data', (msg) => {
+                if (msg.type === 'sync') {
+                    isRestoringHistory = true;
+                    restoreSlideData(msg.data);
+                    slides[currentSlideIndex] = msg.data;
+                    isRestoringHistory = false;
+                } else if (msg.type === 'chat') {
+                    addChatMessage('Ученик', msg.text, '#EF4444');
+                } else if (msg.type === 'file') {
+                    const fileLink = `<a href="${msg.data}" download="${msg.filename}" style="color: #4F46E5; text-decoration: underline; font-weight: bold;">📁 Скачать: ${msg.filename}</a>`;
+                    addChatMessage('Ученик', fileLink, '#EF4444');
+                }
+            });
+            window.boardConn.on('close', () => {
+                document.getElementById('collabStatus').innerHTML = `<b style="color: #EF4444;">Ученик отключился</b>`;
+                document.getElementById('chatArea').style.display = 'none';
+            });
+        }
+
+        // --- ЛОГИКА ЧАТА ---
+        function addChatMessage(sender, text, color) {
+            const box = document.getElementById('chatMessages');
+            const msgDiv = document.createElement('div');
+            // Если текст похож на ссылку, делаем его кликабельным
+            const formattedText = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #4F46E5; text-decoration: underline;">$1</a>');
+            msgDiv.innerHTML = `<b style="color: ${color};">${sender}:</b> <span style="word-break: break-word;">${formattedText}</span>`;
+            box.appendChild(msgDiv);
+            box.scrollTop = box.scrollHeight; // Автоскролл вниз
+        }
+
+        document.getElementById('btnSendMsg').onclick = () => {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (text && window.boardConn && window.boardConn.open) {
+                window.boardConn.send({ type: 'chat', text: text });
+                addChatMessage('Вы', text, '#10B981'); // Зеленый цвет для учителя
+                input.value = '';
+            }
+        };
+        
+        document.getElementById('chatInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btnSendMsg').click();
+        });
+
+        document.getElementById('btnUndo').onclick = () => { if (historyStep > 0) { historyStep--; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
+        document.getElementById('btnRedo').onclick = () => { if (historyStep < historyStack.length - 1) { historyStep++; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
+document.getElementById('btnSendFile').onclick = () => document.getElementById('chatFileInput').click();
+        
+        document.getElementById('chatFileInput').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) { alert('Файл слишком большой! Максимум 5 МБ для прямой отправки.'); return; }
+            
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (window.boardConn && window.boardConn.open) {
+                    window.boardConn.send({ type: 'file', filename: file.name, data: event.target.result });
+                    const fileLink = `<a href="${event.target.result}" download="${file.name}" style="color: #10B981; text-decoration: underline; font-weight: bold;">📁 ${file.name}</a>`;
+                    addChatMessage('Вы', `Отправлен файл: ${fileLink}`, '#10B981');
+                } else {
+                    alert('Ученик не подключен!');
+                }
+                e.target.value = ''; // очистка
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // --- УПРАВЛЕНИЕ СЛАЙДАМИ ---
+        function renderSlidesPanel() {
+            const wrapper = document.getElementById('slidesWrapper');
+            wrapper.innerHTML = '';
+            slides.forEach((slide, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'slide-btn ' + (index === currentSlideIndex ? 'active' : '');
+                btn.innerText = 'Слайд ' + (index + 1);
+                btn.onclick = () => switchSlide(index);
+                wrapper.appendChild(btn);
+            });
+        }
+
+        function switchSlide(index) {
+            slides[currentSlideIndex] = serializeCurrentSlide();
+            slides[currentSlideIndex].id = slides[currentSlideIndex].id || Date.now();
+            currentSlideIndex = index;
+            restoreSlideData(slides[currentSlideIndex]);
+            historyStack = [slides[currentSlideIndex]];
+            historyStep = 0;
+            renderSlidesPanel();
+            saveToLocalStorage();
+        }
+
+        document.getElementById('btnAddSlide').onclick = () => {
+            slides[currentSlideIndex] = serializeCurrentSlide();
+            slides.push({ id: Date.now(), drawing: '', draggables: [], bg: 'bg-lines' });
+            switchSlide(slides.length - 1);
+        };
+
+        // КНОПКА УДАЛЕНИЯ СЛАЙДА
+        document.getElementById('btnDeleteSlide').onclick = () => {
+            if (slides.length <= 1) {
+                alert("Это единственный слайд, его нельзя удалить! Вы можете просто очистить доску.");
+                return;
+            }
+            if (confirm("Вы уверены, что хотите удалить текущий слайд?")) {
+                slides.splice(currentSlideIndex, 1);
+                currentSlideIndex = Math.max(0, currentSlideIndex - 1);
+                restoreSlideData(slides[currentSlideIndex]);
+                historyStack = [slides[currentSlideIndex]];
+                historyStep = 0;
+                renderSlidesPanel();
+                saveToLocalStorage();
+            }
+        };
+
+        // --- СОХРАНЕНИЕ / ПРЕСЕТЫ ---
+        function saveToLocalStorage() {
+            slides[currentSlideIndex] = serializeCurrentSlide();
+            localStorage.setItem('boardExpertMaxFullBase', JSON.stringify(slides));
+        }
+
+        function loadApp() {
+            const saved = localStorage.getItem('boardExpertMaxFullBase');
+            if (saved) {
+                try { slides = JSON.parse(saved); } catch(e) { console.error(e); }
+            }
+            switchSlide(0); 
+        }
+
+        document.getElementById('btnSavePreset').onclick = () => {
+            slides[currentSlideIndex] = serializeCurrentSlide();
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(slides));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href",     dataStr);
+            downloadAnchorNode.setAttribute("download", "lesson_preset.json");
+            document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+        };
+
+        document.getElementById('btnLoadPreset').onclick = () => document.getElementById('importFile').click();
+        document.getElementById('importFile').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try { slides = JSON.parse(e.target.result); switchSlide(0); } 
+                catch(err) { alert("Ошибка файла!"); }
+            };
+            reader.readAsText(file);
+        };
+
+        document.getElementById('btnSavePNG').addEventListener('click', () => {
+            const instruction = document.querySelector('.instruction');
+            if (instruction) instruction.style.display = 'none'; 
+            
+            html2canvas(document.getElementById('boardArea')).then(canvas => {
+                const link = document.createElement('a'); 
+                link.download = 'board_screenshot.png'; 
+                link.href = canvas.toDataURL(); 
+                link.click();
+                if (instruction) instruction.style.display = 'block';
+            }).catch(err => console.error("Ошибка скриншота: ", err));
+        });
+
+        // --- ВСТАВКА КАРТИНОК ИЗ БУФЕРА ОБМЕНА (Ctrl+V / Cmd+V) ---
+        document.addEventListener('paste', (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+                    const file = items[i].getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        // Обертке добавлен display: flex, чтобы убрать скрытые отступы. Кружок уменьшен и прижат к углу.
+                        const imgHtml = `<div class="img-resize-wrapper" style="position: relative; width: 100%; display: flex;">
+                            <img src="${event.target.result}" style="width: 100%; border-radius: 6px; pointer-events: none; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
+                            <div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; background: rgba(0,0,0,0.2); cursor: nwse-resize; z-index: 10; clip-path: polygon(100% 0, 100% 100%, 0 100%);"></div>
+                        </div>`;
+                        
+                        const el = createDraggable('image', 'clipboard_image', 150, 150, '', imgHtml);
+                        
+                        // Полностью очищаем карточку от зеленой подложки, рамок и отступов
+                        el.style.background = 'transparent';
+                        el.style.border = 'none';
+                        el.style.padding = '0';
+                        el.style.boxShadow = 'none';
+                        
+                        // Удаляем заголовок карточки
+                        const title = el.querySelector('h4');
+                        if (title) title.remove();
+
+                        // Удаляем красный крестик. Умный ластик все равно сможет удалить этот скриншот.
+                        const closeBtn = el.querySelector('.close-btn');
+                        if (closeBtn) closeBtn.remove();
+                        
+                        // Убираем внутренние отступы у контента
+                        const content = el.querySelector('.content');
+                        if (content) content.style.marginTop = '0';
+
+                        el.style.maxWidth = 'none';
+                        el.style.minWidth = '150px'; 
+                        el.style.width = '350px'; 
+                        
+                        const handle = el.querySelector('.resize-handle');
+                        
+                        handle.addEventListener('mousedown', (mouseEvent) => {
+                            mouseEvent.stopPropagation();
+                            const startW = el.offsetWidth;
+                            const startX = mouseEvent.clientX;
+                            
+                            const onMouseMove = (moveEvt) => {
+                                const newW = startW + (moveEvt.clientX - startX);
+                                if (newW > 150) el.style.width = newW + 'px'; 
+                            };
+                            
+                            const onMouseUp = () => {
+                                document.removeEventListener('mousemove', onMouseMove);
+                                document.removeEventListener('mouseup', onMouseUp);
+                                recordHistory();
+                            };
+                            
+                            document.addEventListener('mousemove', onMouseMove);
+                            document.addEventListener('mouseup', onMouseUp);
+                        });
+                        
+                        recordHistory();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        // --- ГАЛОЧКИ ДЛЯ ПРАВИЛ ---
+        const ruleBuilderModal = document.getElementById('ruleBuilderModal');
+        const ruleBuilderBody = document.getElementById('ruleBuilderBody');
+        
+        function openRuleBuilder(topicKey, x, y) {
+            const data = grammarData[topicKey]; if(!data || !data.rule) return;
+            const tempDiv = document.createElement('div'); tempDiv.innerHTML = data.rule;
+            const detailsBlocks = tempDiv.querySelectorAll('details');
+            if(detailsBlocks.length === 0) { createDraggable('rule', topicKey, x, y); recordHistory(); return; }
+            
+            ruleBuilderBody.innerHTML = '';
+            detailsBlocks.forEach((details, index) => {
+                const label = document.createElement('label'); label.className = 'rule-checkbox-label';
+                label.innerHTML = `<input type="checkbox" checked value="${index}"> <span>${details.querySelector('summary').innerText.replace('▶', '').trim()}</span>`;
+                ruleBuilderBody.appendChild(label);
+            });
+            document.getElementById('btnConfirmRuleBuild').onclick = () => {
+                let finalHtml = '';
+                Array.from(tempDiv.childNodes).forEach(node => { if(node.nodeName !== 'DETAILS') finalHtml += node.outerHTML || node.textContent; });
+                ruleBuilderBody.querySelectorAll('input').forEach((cb, i) => { if(cb.checked) finalHtml += detailsBlocks[i].outerHTML; });
+                createDraggable('rule', topicKey, x, y, '', finalHtml);
+                ruleBuilderModal.classList.remove('active'); recordHistory();
+            };
+            ruleBuilderModal.classList.add('active');
+        }
+
+        document.getElementById('btnAddRule').addEventListener('click', () => {
+            const topicKey = document.getElementById('topicSelector').value; if (topicKey === 'none') return;
+            openRuleBuilder(topicKey, canvasContainer.clientWidth/2-150, 100);
+        });
+        
+        document.getElementById('btnAddFormula').addEventListener('click', () => {
+            const topicKey = document.getElementById('topicSelector').value; if (topicKey === 'none') return;
+            createDraggable('formula', topicKey, canvasContainer.clientWidth/2-150, 100); recordHistory();
+        });
+
+        // ИНИЦИАЛИЗАЦИЯ
+        window.onload = () => {
+            // Подключаем модалку глаголов
+            const btnVerbsModal = document.getElementById('btnVerbsModal');
+            const verbsModal = document.getElementById('verbsModal');
+            const closeVerbsModal = document.querySelector('#verbsModal .modal-close');
+            const searchVerbs = document.getElementById('searchVerbs');
+            const verbsTableBody = document.getElementById('verbsTableBody');
+
+            function renderVerbsTable(filterText = '') {
+                verbsTableBody.innerHTML = '';
+                const lowerFilter = filterText.toLowerCase();
+                const filtered = irregularVerbs.filter(v => v[0].toLowerCase().includes(lowerFilter) || v[1].toLowerCase().includes(lowerFilter) || v[2].toLowerCase().includes(lowerFilter) || v[3].toLowerCase().includes(lowerFilter));
+                filtered.forEach(v => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td><b>${v[0]}</b></td><td>${v[1]}</td><td>${v[2]}</td><td>${v[3]}</td>`;
+                    verbsTableBody.appendChild(tr);
+                });
+            }
+            btnVerbsModal.addEventListener('click', () => { verbsModal.classList.add('active'); renderVerbsTable(); searchVerbs.value = ''; searchVerbs.focus(); });
+            closeVerbsModal.addEventListener('click', () => verbsModal.classList.remove('active'));
+            verbsModal.addEventListener('click', (e) => { if (e.target === verbsModal) verbsModal.classList.remove('active'); });
+            searchVerbs.addEventListener('input', (e) => renderVerbsTable(e.target.value));
+
+            // Запуск логики
+            loadApp();
+        };
+
+    </script>
+</body>
+</html>
