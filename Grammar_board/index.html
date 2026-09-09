@@ -1256,6 +1256,7 @@
         window.boardConn = null;
 
         const peerConfig = {
+            debug: 2, // Включаем отладку, чтобы видеть возможные скрытые ошибки в консоли
             config: {
                 'iceServers': [
                     { urls: 'stun:stun.l.google.com:19302' },
