@@ -1286,11 +1286,10 @@
                 window.boardConn = conn;
                 setupConnection();
                 
-                // ИСПРАВЛЕНИЕ: Ждем РЕАЛЬНОГО открытия туннеля, а не просто стука в дверь
                 conn.on('open', () => {
                     statusEl.innerHTML = `<b style="color: #10B981;">🟢 Ученик подключен!</b>`;
-                    // Теперь безопасно отправляем слайд
-                    window.boardConn.send({ type: 'sync', data: serializeCurrentSlide() });
+                    // ВАЖНО: Мы больше не стреляем данными вслепую!
+                    // Ждем сигнала ready от ученика
                 });
             });
             
@@ -1313,12 +1312,15 @@
             window.boardPeer = new Peer(peerConfig);
             
             window.boardPeer.on('open', () => {
-                // Убрали параметр-вредитель reliable: true, чтобы браузеры не ссорились
-                window.boardConn = window.boardPeer.connect(roomId);
+                // Возвращаем надежный канал, так как мы решили проблему хэндшейком!
+                window.boardConn = window.boardPeer.connect(roomId, { reliable: true });
                 
                 window.boardConn.on('open', () => {
                     statusEl.innerHTML = `<b style="color: #10B981;">🟢 Связь установлена!</b>`;
                     setupConnection();
+                    
+                    // Говорим учителю, что мы полностью готовы принять доску
+                    window.boardConn.send({ type: 'ready' });
                 });
                 
                 window.boardConn.on('error', (err) => {
@@ -1338,7 +1340,10 @@
             document.getElementById('chatArea').style.display = 'flex';
             
             window.boardConn.on('data', (msg) => {
-                if (msg.type === 'sync') {
+                if (msg.type === 'ready') {
+                    // Учитель поймал сигнал готовности от ученика и теперь безопасно отправляет доску!
+                    window.boardConn.send({ type: 'sync', data: serializeCurrentSlide() });
+                } else if (msg.type === 'sync') {
                     // Блокируем запись истории во время получения чужих данных
                     isRestoringHistory = true;
                     restoreSlideData(msg.data);
