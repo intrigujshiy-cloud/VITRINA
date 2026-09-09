@@ -1312,8 +1312,8 @@
             window.boardPeer = new Peer(peerConfig);
             
             window.boardPeer.on('open', () => {
-                // Добавляем флаг reliable для 100% стабильной передачи тяжелых файлов
-                window.boardConn = window.boardPeer.connect(roomId, { reliable: true });
+                // Убрали параметр-вредитель reliable: true, чтобы браузеры не ссорились
+                window.boardConn = window.boardPeer.connect(roomId);
                 
                 window.boardConn.on('open', () => {
                     statusEl.innerHTML = `<b style="color: #10B981;">🟢 Связь установлена!</b>`;
