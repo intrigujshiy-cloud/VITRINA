@@ -1258,9 +1258,11 @@
         document.getElementById('btnCreateRoom').onclick = () => {
             const statusEl = document.getElementById('collabStatus');
             statusEl.innerText = 'Создание комнаты...';
-            // Генерируем красивый 5-значный код
-            const shortId = 'CHEF-' + Math.random().toString(36).substr(2, 5).toUpperCase();
             
+            // Уничтожаем старые подключения, чтобы не было "призраков"
+            if (window.boardPeer) window.boardPeer.destroy();
+            
+            const shortId = 'CHEF-' + Math.random().toString(36).substr(2, 5).toUpperCase();
             window.boardPeer = new Peer(shortId);
             
             window.boardPeer.on('open', (id) => {
@@ -1270,11 +1272,18 @@
             window.boardPeer.on('connection', (conn) => {
                 window.boardConn = conn;
                 setupConnection();
-                statusEl.innerHTML = `<b style="color: #10B981;">🟢 Ученик подключен!</b>`;
-                // Мгновенно отправляем ученику текущий слайд
-                setTimeout(() => {
+                
+                // ИСПРАВЛЕНИЕ: Ждем РЕАЛЬНОГО открытия туннеля, а не просто стука в дверь
+                conn.on('open', () => {
+                    statusEl.innerHTML = `<b style="color: #10B981;">🟢 Ученик подключен!</b>`;
+                    // Теперь безопасно отправляем слайд
                     window.boardConn.send({ type: 'sync', data: serializeCurrentSlide() });
-                }, 500);
+                });
+            });
+            
+            window.boardPeer.on('error', (err) => {
+                console.error(err);
+                statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка сервера связи</b>`;
             });
         };
 
@@ -1285,16 +1294,29 @@
             const statusEl = document.getElementById('collabStatus');
             statusEl.innerText = 'Подключение...';
             
+            // Уничтожаем старые подключения
+            if (window.boardPeer) window.boardPeer.destroy();
+            
             window.boardPeer = new Peer();
+            
             window.boardPeer.on('open', () => {
-                window.boardConn = window.boardPeer.connect(roomId);
+                // Добавляем флаг reliable для 100% стабильной передачи тяжелых файлов
+                window.boardConn = window.boardPeer.connect(roomId, { reliable: true });
+                
                 window.boardConn.on('open', () => {
                     statusEl.innerHTML = `<b style="color: #10B981;">🟢 Связь установлена!</b>`;
                     setupConnection();
                 });
-                window.boardConn.on('error', () => {
-                    statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка кода или связи</b>`;
+                
+                window.boardConn.on('error', (err) => {
+                    console.error(err);
+                    statusEl.innerHTML = `<b style="color: #EF4444;">Сбой канала</b>`;
                 });
+            });
+            
+            window.boardPeer.on('error', (err) => {
+                console.error(err);
+                statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка кода или связи</b>`;
             });
         };
 
@@ -1304,6 +1326,7 @@
             
             window.boardConn.on('data', (msg) => {
                 if (msg.type === 'sync') {
+                    // Блокируем запись истории во время получения чужих данных
                     isRestoringHistory = true;
                     restoreSlideData(msg.data);
                     slides[currentSlideIndex] = msg.data;
