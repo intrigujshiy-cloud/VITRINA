@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска Преподавателя EXPERT MAX PRO</title>
+    <title>Доска Преподавателя Английского EXPERT MAX PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Подключаем Firebase Cloud (Надежные сокеты) вместо PeerJS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -15,8 +15,9 @@
         }
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        .toolbar { background-color: var(--panel-bg); padding: 8px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #E5E7EB; z-index: 100; flex-wrap: wrap; }
-        .tools-bar { background-color: #F9FAFB; padding: 8px 15px; display: flex; gap: 8px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 99; flex-wrap: wrap; }
+        .toolbar { background-color: var(--panel-bg); padding: 8px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid #E5E7EB; z-index: 100; flex-wrap: wrap; position: relative; }
+        .tools-bar { background-color: #F9FAFB; padding: 8px 15px; display: flex; gap: 8px; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 99; flex-wrap: wrap; position: relative; }
+        .color-wrapper { display: flex; align-items: center; gap: 5px; font-size: 13px; color: #4B5563; cursor: pointer; font-weight: bold; }
         .bottom-bar { background-color: var(--panel-bg); padding: 10px 15px; display: flex; gap: 10px; align-items: center; box-shadow: 0 -2px 4px rgba(0,0,0,0.05); z-index: 100; justify-content: space-between;}
         
         select, button, input[type="color"], input[type="text"] { padding: 6px 12px; border: 1px solid #D1D5DB; border-radius: 6px; font-size: 13px; outline: none; }
@@ -66,7 +67,11 @@
         .draggable .link-btn { position: absolute; top: -10px; right: 18px; background: #3B82F6; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1; }
         .draggable .link-btn:hover { background: #2563EB; transform: scale(1.1); }
         .draggable .link-btn.linking { background: #EF4444; animation: neonPulseDyn 1s infinite; }
+        .draggable .eye-btn { position: absolute; top: -10px; right: 46px; background: #10B981; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1; }
+        .draggable .eye-btn:hover { transform: scale(1.1); }
+        .draggable .eye-btn.hidden-state { background: #6B7280; }
         .draggable .content { outline: none; font-family: 'Segoe UI', Tahoma, sans-serif; margin-top: 8px; flex-grow: 1; line-height: 1.4; }
+        body.student-mode .teacher-only { display: none !important; }
         .draggable.formula-card .content { font-family: 'Consolas', monospace; white-space: pre-wrap; font-size: 13px;}
         .example-text { color: #4B5563; font-style: italic; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 2px; margin-bottom: 8px; font-family: 'Segoe UI', Tahoma, sans-serif;}
         .draggable h4 { margin: 0 0 8px 0; outline: none; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 5px; color: var(--primary);}
@@ -174,39 +179,70 @@
             </optgroup>
         </select>
         
+        <div class="separator"></div>
         <button id="btnAddFormula" class="btn-active">🧮 Формулы</button>
         <button id="btnAddRule" class="btn-rule-add">📖 Правила (Сборка)</button>
         <button id="btnVerbsModal" class="btn-verbs">🔥 Неправильные глаголы</button>
+        
+        <div class="separator"></div>
+        <button id="btnAiCheat" class="btn-tool teacher-only" style="background:#9c27b0; color:white; font-weight:bold; border-color:#9c27b0;">🤖 ИИ-Шпаргалка</button>
+        <button id="btnConfetti" class="btn-tool teacher-only" style="background:#ec4899; color:white; font-weight:bold; border-color:#ec4899;">🎉 Гениально!</button>
+        <button id="btnLockStudent" class="btn-tool teacher-only" style="background:#f59e0b; color:white; font-weight:bold; border-color:#f59e0b;">🔒 Выключить управление</button>
+        <button id="btnCollab" class="btn-tool" style="background: #10B981; color: white; margin-left: auto;">🌐 Урок 1 на 1</button>
     </div>
 
     <div class="tools-bar">
         <button id="btnPen" class="btn-tool active-tool">✏️ Карандаш</button>
-        <button id="btnNeon" class="btn-tool">✨ Неон</button>
         <button id="btnHighlighter" class="btn-tool" style="color: #D97706;">🖍️ Маркер</button>
-        <button id="btnArrow" class="btn-tool">↗️ Прямая стрелка</button>
-        <button id="btnCurveArrow" class="btn-tool">↪️ Стрелка-дуга</button>
+        <button id="btnNeon" class="btn-tool">✨ Неон</button>
+        <select id="lineWidth" style="margin-left: 2px;"><option value="2">Тонкий</option><option value="4" selected>Средний</option><option value="8">Толстый</option></select>
+        <input type="color" id="colorPicker" value="#000000" title="Цвет карандаша" style="margin-left: 2px; padding: 0; width: 26px; height: 26px; border: none; cursor: pointer;">
+        
+        <div class="separator"></div>
         <button id="btnEraser" class="btn-tool">🧽 Ластик</button>
-        <button id="btnSmartEraser" class="btn-tool" style="color: #EF4444;" title="Клик по карточке = удалить. Клик по фону = стереть все рисунки.">🪄 Умный ластик</button>
+        <button id="btnSmartEraser" class="btn-tool" style="color: #EF4444;" title="Удалить карточку">🪄 Умный</button>
+        
+        <div class="separator"></div>
         <button id="btnText" class="btn-tool">🔤 Текст</button>
         <button id="btnSticker" class="btn-tool" style="background: #FEF08A; color: #854D0E; font-weight: bold;">📝 Стикер</button>
+        <button id="btnEmoji" class="btn-tool">😀 Эмодзи</button>
+        <button id="btnMarkers" class="btn-tool" style="color: #4F46E5; font-weight: bold;">✨ Рамки</button>
+        <input type="color" id="markerColorPicker" value="#10B981" title="Цвет рамок" style="margin-left: 2px; padding: 0; width: 26px; height: 26px; border: 2px solid #10B981; border-radius: 4px; cursor: pointer;">
+        <button id="btnTimeline" class="btn-tool" style="color: #4F46E5; font-weight: bold;">⏳ Ось</button>
+        
+        <div class="separator"></div>
         <button id="btnLaser" class="btn-tool">🔴 Указка</button>
         <button id="btnSpotlight" class="btn-tool" style="background: #111827; color: #FBBF24;">🔦 Прожектор</button>
         <button id="btnBlind" class="btn-tool" style="background: #374151; color: white;">⬛ Шторка</button>
-        <button id="btnTimeline" class="btn-tool" style="color: #4F46E5; font-weight: bold;">⏳ Ось времени</button>
-        <button id="btnEmoji" class="btn-tool">😀 Эмодзи</button>
-        <button id="btnMarkers" class="btn-tool" style="color: #4F46E5; font-weight: bold;">✨ Рамки</button>
         
         <div class="separator"></div>
-        <button id="btnAiCheat" class="btn-tool teacher-only" style="background:#9c27b0; color:white; font-weight:bold; border-color:#9c27b0;">🤖 ИИ-Шпаргалка</button>
-        <button id="btnConfetti" class="btn-tool teacher-only" style="background:#ec4899; color:white; font-weight:bold; border-color:#ec4899;" title="Салют у ученика">🎉 Гениально!</button>
-        <button id="btnLockStudent" class="btn-tool teacher-only" style="background:#f59e0b; color:white; font-weight:bold; border-color:#f59e0b;" title="Блокировать доску ученика">🔒 Выключить управление у ученика</button>
+        <button id="btnArrow" class="btn-tool">↗️ Прямая</button>
+        <button id="btnCurveArrow" class="btn-tool">↪️ Дуга</button>
+        <select id="linkStyle" style="color: #3B82F6; border-color: #3B82F6; font-weight: bold;">
+            <option value="dashed_arrow">Стрелка (пунктир)</option>
+            <option value="solid_arrow">Стрелка (сплошная)</option>
+            <option value="dashed_line">Линия (пунктир)</option>
+            <option value="solid_line">Линия (сплошная)</option>
+        </select>
+        <label style="display:flex; align-items:center; font-size:13px; color:#4B5563; cursor:pointer; font-weight:bold; background: white; padding: 4px 8px; border-radius: 6px; border: 1px solid #D1D5DB;">
+            <input type="checkbox" id="linkNumbering" style="margin-right: 5px;"> 1,2,3
+        </label>
+        
         <div class="separator"></div>
-        
-        <input type="color" id="colorPicker" value="#000000" title="Цвет карандаша">
-        <input type="color" id="markerColorPicker" value="#10B981" title="Цвет рамок/указателей" style="border-color: #10B981; border-width: 2px;">
-        
-        <button id="btnCollab" class="btn-tool" style="background: #10B981; color: white; margin-left: auto;">🌐 Урок 1 на 1</button>
-        
+        <select id="bgSelector">
+            <option value="bg-lines">Фон: Линейка</option>
+            <option value="bg-grid">Фон: Клетка</option>
+            <option value="bg-white">Фон: Белый</option>
+            <option value="custom" style="display:none;">Свой фон</option>
+        </select>
+        <button id="btnBgUpload" class="btn-tool" style="background: #F3F4F6;">🖼️ Свой фон / PDF</button>
+        <input type="file" id="bgImageInput" accept="image/*" style="display: none;">
+        <div class="separator"></div>
+        <button id="btnUndo" class="btn-tool" title="Шаг назад">↩️ Отменить</button>
+        <button id="btnRedo" class="btn-tool" title="Шаг вперед">↪️ Вернуть</button>
+        <button id="btnClear" class="btn-tool" style="color: #EF4444;">🗑️ Очистить</button>
+    </div>
+
     <div id="emojiPanel" style="display: none; position: absolute; top: 90px; left: 50%; transform: translateX(-50%); background: white; padding: 12px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; grid-template-columns: repeat(7, 1fr); gap: 12px; font-size: 28px; cursor: pointer; border: 2px solid #E5E7EB; user-select: none;">
         <span class="emoji-item">👑</span><span class="emoji-item">🏆</span><span class="emoji-item">🧲</span><span class="emoji-item">🎥</span><span class="emoji-item">📸</span><span class="emoji-item">👻</span><span class="emoji-item">✅</span>
         <span class="emoji-item">❌</span><span class="emoji-item">💡</span><span class="emoji-item">🔥</span><span class="emoji-item">⚠️</span><span class="emoji-item">⭐</span><span class="emoji-item">❤️</span><span class="emoji-item">👍</span>
@@ -222,7 +258,7 @@
     </div>
 
     <!-- Панель совместного доступа -->
-    <div id="collabPanel" style="display: none; position: absolute; top: 90px; right: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 10px; border: 2px solid #10B981; font-size: 14px; width: 260px;">
+    <div id="collabPanel" style="display: none; position: absolute; top: 120px; right: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 10px; border: 2px solid #10B981; font-size: 14px; width: 260px;">
         <div style="font-weight: bold; color: #10B981; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
             <span>Комната связи</span>
             <button onclick="document.getElementById('collabPanel').style.display='none'" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #9CA3AF; padding: 0; line-height: 1;" title="Свернуть">✖</button>
@@ -248,28 +284,6 @@
                 <button id="btnSendMsg" style="background: #4F46E5; color: white; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer;">➤</button>
             </div>
         </div>
-    </div>
-        <select id="lineWidth"><option value="2">Тонкий</option><option value="4" selected>Средний</option><option value="8">Толстый</option></select>
-        <select id="bgSelector"><option value="bg-lines">Фон: Линейка</option><option value="bg-grid">Фон: Клетка</option><option value="bg-white">Фон: Белый</option><option value="custom" style="display:none;">Свой фон</option></select>
-        
-        <button id="btnBgUpload" class="btn-tool" style="background: #F3F4F6;">🖼️ Свой фон / PDF</button>
-        <input type="file" id="bgImageInput" accept="image/*,.pdf" style="display: none;">
-        
-        <div class="separator"></div>
-        <select id="linkStyle" title="Стиль связей" style="color: #3B82F6; border-color: #3B82F6; font-weight: bold;">
-            <option value="dashed_arrow">Стрелка (пунктир)</option>
-            <option value="solid_arrow">Стрелка (сплошная)</option>
-            <option value="dashed_line">Линия (пунктир)</option>
-            <option value="solid_line">Линия (сплошная)</option>
-        </select>
-        <label style="display:flex; align-items:center; font-size:13px; color:#4B5563; cursor:pointer; font-weight:bold; background: white; padding: 4px 8px; border-radius: 6px; border: 1px solid #D1D5DB;">
-            <input type="checkbox" id="linkNumbering" style="margin-right: 5px;"> Нумерация (1,2,3)
-        </label>
-        
-        <div class="separator"></div>
-        <button id="btnUndo" class="btn-tool" title="Шаг назад">↩️ Отменить</button>
-        <button id="btnRedo" class="btn-tool" title="Шаг вперед">↪️ Вернуть</button>
-        <button id="btnClear" class="btn-tool" style="color: #EF4444;">🗑️ Очистить слайд</button>
     </div>
 
     <div class="main-container">
@@ -335,7 +349,7 @@
             <h3 style="margin-top:0; color:#9c27b0; border-bottom:2px solid #eee; padding-bottom:10px;">🤖 ИИ-Шпаргалка (Gemini 1.5)</h3>
             
             <div id="ai-key-container">
-                <label style="font-size:12px; color:#666; font-weight:bold;">API Ключ Gemini (Сохраняется в браузере):</label>
+                <label style="font-size:12px; color:#666; font-weight:bold;">API Ключ Gemini (<a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#9c27b0;">Получить ключ</a>):</label>
                 <input type="password" id="ai-api-key" placeholder="AIzaSy..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-bottom:15px; font-family:monospace; box-sizing: border-box;">
             </div>
             
@@ -669,7 +683,7 @@
 
             smartLinks.forEach((link, index) => {
                 const el1 = document.getElementById(link.from); const el2 = document.getElementById(link.to);
-                if(el1 && el2) {
+                if(el1 && el2 && el1.style.display !== 'none' && el2.style.display !== 'none') {
                     const x1 = el1.offsetLeft + el1.offsetWidth / 2; const y1 = el1.offsetTop + el1.offsetHeight / 2;
                     const x2 = el2.offsetLeft + el2.offsetWidth / 2; const y2 = el2.offsetTop + el2.offsetHeight / 2;
                     const dx = x2 - x1; const dy = y2 - y1; const cx = x1 + dx/2 - dy/5; const cy = y1 + dy/2 + dx/5;
@@ -924,7 +938,7 @@
         document.getElementById('btnSticker').onclick = () => {
             const colors = ['#FEF08A', '#A7F3D0', '#FECACA', '#BFDBFE', '#E9D5FF']; // Желтый, зеленый, красный, синий, фиолетовый
             const randomColor = colors[Math.floor(Math.random() * colors.length)];
-            const stickerHtml = `<div style="background: ${randomColor}; width: 100%; height: 100%; padding: 12px; box-sizing: border-box; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; font-size: 16px; color: #1F2937; outline: none; border-radius: 2px; box-shadow: 2px 4px 10px rgba(0,0,0,0.15);" contenteditable="true">Стикер...</div>`;
+            const stickerHtml = `<div class="sticker-content" data-color-idx="0" style="background: ${randomColor}; width: 100%; height: 100%; padding: 12px; box-sizing: border-box; font-family: 'Comic Sans MS', 'Segoe UI', sans-serif; font-size: 16px; color: #1F2937; outline: none; border-radius: 2px; box-shadow: 2px 4px 10px rgba(0,0,0,0.15);" contenteditable="true">Стикер...</div>`;
             
             const el = createDraggable('image', 'sticker_note', canvasContainer.clientWidth/2 - 75, 150, '', stickerHtml);
             
@@ -1021,7 +1035,6 @@
                 // Очищаем от зеленой подложки
                 el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
                 const title = el.querySelector('h4'); if (title) title.remove();
-                const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
                 
                 if (type === 'neon_box') { el.style.width = '200px'; el.style.height = '80px'; }
                 if (type === 'spotlight_ring') { el.style.width = '120px'; el.style.height = '120px'; }
@@ -1231,10 +1244,10 @@
                 displayContent = (type === 'formula' ? grammarData[contentOrTopicKey].formula : grammarData[contentOrTopicKey].rule);
             }
             
-            // Крестик и 🔗 добавляются ТОЛЬКО если это не эмодзи
+            /// Крестик и Скрепка (для всех, кроме эмодзи)
             if (type !== 'emoji') {
                 const closeBtn = document.createElement('button'); closeBtn.className = 'close-btn'; closeBtn.innerHTML = '×';
-                closeBtn.onclick = () => { el.remove(); removeLinksByCardId(el.id); recordHistory(); }; el.appendChild(closeBtn);
+                closeBtn.onclick = () => { el.remove(); if(typeof removeLinksByCardId === 'function') removeLinksByCardId(el.id); recordHistory(); }; el.appendChild(closeBtn);
                 
                 const linkBtn = document.createElement('button'); linkBtn.className = 'link-btn'; linkBtn.innerHTML = '🔗'; linkBtn.title = 'Связать умной стрелкой';
                 linkBtn.onclick = (e) => {
@@ -1248,6 +1261,49 @@
                     } 
                     else { linkingFrom = el.id; linkBtn.classList.add('linking'); }
                 }; el.appendChild(linkBtn);
+            }
+
+            /// Глазик для ВСЕХ объектов (видит только учитель)
+            const eyeBtn = document.createElement('button'); eyeBtn.className = 'eye-btn teacher-only'; eyeBtn.innerHTML = '👁️'; eyeBtn.title = 'Скрыть объект от ученика';
+            if (type === 'emoji') { eyeBtn.style.right = '0px'; eyeBtn.style.top = '-20px'; } // Сдвигаем глазик, чтобы не наезжал на эмодзи
+            eyeBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = el.dataset.isHidden === 'true';
+                if (isHidden) {
+                    el.dataset.isHidden = 'false';
+                    eyeBtn.innerHTML = '👁️';
+                    eyeBtn.classList.remove('hidden-state');
+                    el.style.opacity = '1';
+                } else {
+                    el.dataset.isHidden = 'true';
+                    eyeBtn.innerHTML = '🚫';
+                    eyeBtn.classList.add('hidden-state');
+                    el.style.opacity = '0.5';
+                }
+                recordHistory();
+                renderSmartArrows(); // Перерисовываем стрелки (чтобы исчезли/появились)
+            }; el.appendChild(eyeBtn);
+
+            /// Кнопка палитры ТОЛЬКО для стикеров
+            if (customHtml && customHtml.includes('sticker-content')) {
+                const paletteBtn = document.createElement('button');
+                paletteBtn.innerHTML = '🎨';
+                paletteBtn.style.cssText = 'position: absolute; top: -10px; left: -10px; background: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; transition: 0.2s;';
+                paletteBtn.onmouseover = () => paletteBtn.style.transform = 'scale(1.1)';
+                paletteBtn.onmouseout = () => paletteBtn.style.transform = 'scale(1)';
+                paletteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    const inner = el.querySelector('.sticker-content');
+                    if (inner) {
+                        const colors = ['#FEF08A', '#A7F3D0', '#FECACA', '#BFDBFE', '#E9D5FF'];
+                        let currentIdx = parseInt(inner.dataset.colorIdx || '0');
+                        currentIdx = (currentIdx + 1) % colors.length;
+                        inner.dataset.colorIdx = currentIdx;
+                        inner.style.background = colors[currentIdx];
+                        recordHistory();
+                    }
+                };
+                el.appendChild(paletteBtn);
             }
 
             if (type !== 'text' && type !== 'emoji') { const h4 = document.createElement('h4'); h4.contentEditable = true; h4.innerText = displayTitle; el.appendChild(h4); }
@@ -1338,7 +1394,7 @@
                     return { id: el.id, type: 'blind', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
                 }
                 const openDetails = Array.from(el.querySelectorAll('details')).map((d, i) => d.open ? i : -1).filter(i => i !== -1);
-                return { id: el.id, type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails };
+                return { id: el.id, type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails, isHidden: el.dataset.isHidden || 'false' };
             });
             return { 
                 drawing: canvas.toDataURL(), 
@@ -1390,15 +1446,24 @@
                     if(d.type === 'text') el.querySelector('.content').innerText = d.content;
                     if(d.openDetails) { const details = el.querySelectorAll('details'); d.openDetails.forEach(index => { if(details[index]) details[index].open = true; }); }
                     
-                    // ИСПРАВЛЕНИЕ: Снимаем рамки у стикеров и маркеров при сборке на стороне ученика!
+                    if (d.isHidden === 'true') {
+                        el.dataset.isHidden = 'true';
+                        if (typeof isStudent !== 'undefined' && isStudent) {
+                            el.style.display = 'none';
+                        } else {
+                            el.style.opacity = '0.5';
+                            const eyeBtn = el.querySelector('.eye-btn');
+                            if (eyeBtn) {
+                                eyeBtn.innerHTML = '🚫';
+                                eyeBtn.classList.add('hidden-state');
+                            }
+                        }
+                    }
+
+                    // Снимаем фон и рамки у стикеров/маркеров/картинок (инструменты крестик и скрепка НЕ ТРОГАЕМ!)
                     if (d.type === 'image') {
                         el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
                         const title = el.querySelector('h4'); if (title) title.remove();
-                        // Если это маркер (нет поля для ввода текста), убираем еще и красный крестик
-                        if (d.content && !d.content.includes('contenteditable="true"')) {
-                            const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
-                            const linkBtn = el.querySelector('.link-btn'); if (linkBtn) linkBtn.remove(); // Убираем скрепку у маркеров тоже
-                        }
                     }
                 }
             });
@@ -1692,7 +1757,6 @@
                         const el = createDraggable('image', 'clipboard_image', 150, 150, '', imgHtml);
                         el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
                         const title = el.querySelector('h4'); if (title) title.remove();
-                        const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
                         const content = el.querySelector('.content'); if (content) content.style.marginTop = '0';
                         el.style.maxWidth = 'none'; el.style.minWidth = '150px'; el.style.width = '350px'; 
                         const handle = el.querySelector('.resize-handle');
