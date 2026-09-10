@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска Преподавателя Английского EXPERT MAX PRO</title>
+    <title>Доска Преподавателя EXPERT MAX PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Подключаем Firebase Cloud (Надежные сокеты) вместо PeerJS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -199,7 +199,7 @@
         <div class="separator"></div>
         <button id="btnAiCheat" class="btn-tool teacher-only" style="background:#9c27b0; color:white; font-weight:bold; border-color:#9c27b0;">🤖 ИИ-Шпаргалка</button>
         <button id="btnConfetti" class="btn-tool teacher-only" style="background:#ec4899; color:white; font-weight:bold; border-color:#ec4899;" title="Салют у ученика">🎉 Гениально!</button>
-        <button id="btnLockStudent" class="btn-tool teacher-only" style="background:#f59e0b; color:white; font-weight:bold; border-color:#f59e0b;" title="Блокировать доску ученика">🔒 Заткнись и смотри</button>
+        <button id="btnLockStudent" class="btn-tool teacher-only" style="background:#f59e0b; color:white; font-weight:bold; border-color:#f59e0b;" title="Блокировать доску ученика">🔒 Выключить управление у ученика</button>
         <div class="separator"></div>
         
         <input type="color" id="colorPicker" value="#000000" title="Цвет карандаша">
@@ -1451,7 +1451,15 @@
             // Очищаем старые данные комнаты при создании
             currentRoomRef.set({ createdAt: Date.now(), syncData: null, chat: [], file: null });
             
-            statusEl.innerHTML = `<span style="color:#4F46E5;">Ваш код:</span> <b>${shortId}</b><br>Продиктуйте ученику!`;
+            // Генерируем готовую ссылку с ролью ученика и текст приглашения
+            const studentUrl = window.location.origin + window.location.pathname + '?role=student';
+            const inviteText = `Привет! Вот ссылка на нашу доску: ${studentUrl} \nТвой код для входа: ${shortId}`;
+            
+            // Выводим код и красивую кнопку копирования
+            statusEl.innerHTML = `
+                <div style="margin-bottom: 8px;"><span style="color:#4F46E5;">Ваш код:</span> <b style="font-size:16px;">${shortId}</b></div>
+                <button onclick="navigator.clipboard.writeText(\`${inviteText}\`); this.innerText='✅ Скопировано!'; this.style.background='#10B981'; this.style.color='white'; setTimeout(()=>{this.innerText='📋 Скопировать приглашение'; this.style.background='#E5E7EB'; this.style.color='#374151';}, 2000);" style="background: #E5E7EB; color: #374151; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; width: 100%; font-weight: bold; transition: 0.2s;">📋 Скопировать приглашение</button>
+            `;
             setupConnection();
         };
 
@@ -1501,7 +1509,7 @@
                 }
             });
 
-            // 2. Слушаем блокировку "Заткнись и смотри"
+            // 2. Слушаем блокировку "Выключить управление у ученика"
             currentRoomRef.child('locked').on('value', (snapshot) => {
                 if (!isTeacher) {
                     const locked = snapshot.val();
@@ -1740,7 +1748,7 @@
 
         // --- АНТИСТРЕСС ФУНКЦИИ УЧИТЕЛЯ ---
 
-        // 1. Кнопка "Заткнись и смотри" (Блокировка)
+        // 1. Кнопка "Выключить управление у ученика" (Блокировка)
         document.getElementById('btnLockStudent').addEventListener('click', function() {
             if (!currentRoomRef) { alert('Сначала создайте комнату связи!'); return; }
             isBoardLocked = !isBoardLocked;
@@ -1753,7 +1761,7 @@
             } else {
                 this.style.background = '#f59e0b'; // Оранжевый
                 this.style.borderColor = '#f59e0b';
-                this.innerText = '🔒 Заткнись и смотри';
+                this.innerText = '🔒 Выключить управление у ученика';
             }
         });
 
