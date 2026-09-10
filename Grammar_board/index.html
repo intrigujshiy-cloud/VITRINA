@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска Преподавателя Английского EXPERT MAX PRO</title>
+    <title>Доска Преподавателя EXPERT MAX PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Подключаем Firebase Cloud (Надежные сокеты) вместо PeerJS -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         :root {
             --primary: #4F46E5; --rule-color: #10B981; --verb-color: #F59E0B; --tool-color: #6B7280;
@@ -1245,78 +1247,45 @@
             historyStack.push(state);
             saveToLocalStorage();
             
-            // Если есть активное P2P подключение - отправляем слайд ученику
-            if (window.boardConn && window.boardConn.open) {
-                window.boardConn.send({ type: 'sync', data: state });
+            // Отправляем слайд в облако Firebase
+            if (typeof currentRoomRef !== 'undefined' && currentRoomRef) {
+                currentRoomRef.child('syncData').set({
+                    sender: typeof isTeacher !== 'undefined' && isTeacher ? 'teacher' : 'student',
+                    state: state,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
             }
         }
 
-        // --- ЛОГИКА P2P СОЕДИНЕНИЯ (ФАЗА 1) ---
-        window.boardPeer = null;
-        window.boardConn = null;
-
-        const peerConfig = {
-            debug: 2, // Включаем отладку, чтобы видеть возможные скрытые ошибки в консоли
-            config: {
-                'iceServers': [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' },
-                    { urls: 'stun:stun2.l.google.com:19302' },
-                    { urls: 'stun:stun3.l.google.com:19302' },
-                    { urls: 'stun:stun4.l.google.com:19302' }
-                ]
-            }
+        // --- ЛОГИКА СВЯЗИ ЧЕРЕЗ FIREBASE (ФАЗА 2) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDU3v0GjbVXN7YrF2W0QlUZHjgLgULovcI",
+            authDomain: "grammar-board.firebaseapp.com",
+            databaseURL: "https://grammar-board-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "grammar-board",
+            storageBucket: "grammar-board.firebasestorage.app",
+            messagingSenderId: "417434328321",
+            appId: "1:417434328321:web:68259703eeb05ddc56cf00"
         };
+        
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.database();
+        let currentRoomRef = null;
+        let isTeacher = false;
 
         document.getElementById('btnCreateRoom').onclick = () => {
             const statusEl = document.getElementById('collabStatus');
             statusEl.innerText = 'Создание комнаты...';
             
-            // Уничтожаем старые подключения, чтобы не было "призраков"
-            if (window.boardPeer) window.boardPeer.destroy();
-            
             const shortId = 'CHEF-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+            currentRoomRef = db.ref('rooms/' + shortId);
+            isTeacher = true;
             
-            // Пробуем основной бесплатный сервер PeerJS, а если он лежит — запасной cloud-сервер
-            window.boardPeer = new Peer(shortId, {
-                host: '0.peerjs.com',
-                port: 443,
-                secure: true,
-                config: peerConfig.config
-            });
+            // Очищаем старые данные комнаты при создании
+            currentRoomRef.set({ createdAt: Date.now(), syncData: null, chat: [], file: null });
             
-            // Запасной вариант на случай падения основного (если не открылся за 5 секунд)
-            window.boardPeer.on('error', (err) => {
-                if (err.type === 'server-error' || err.type === 'socket-error' || err.type === 'unavailable-id') {
-                    console.log('Основной сервер упал, переключаемся на резервный...');
-                    window.boardPeer = new Peer(shortId, {
-                        host: 'peerjs-server.herokuapp.com', // или любой другой зеркальный хост
-                        port: 443,
-                        secure: true,
-                        config: peerConfig.config
-                    });
-                }
-            });
-            
-            window.boardPeer.on('open', (id) => {
-                statusEl.innerHTML = `<span style="color:#4F46E5;">Ваш код:</span> <b>${id}</b><br>Продиктуйте ученику!`;
-            });
-            
-            window.boardPeer.on('connection', (conn) => {
-                window.boardConn = conn;
-                setupConnection();
-                
-                conn.on('open', () => {
-                    statusEl.innerHTML = `<b style="color: #10B981;">🟢 Ученик подключен!</b>`;
-                    // ВАЖНО: Мы больше не стреляем данными вслепую!
-                    // Ждем сигнала ready от ученика
-                });
-            });
-            
-            window.boardPeer.on('error', (err) => {
-                console.error(err);
-                statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка сервера связи</b>`;
-            });
+            statusEl.innerHTML = `<span style="color:#4F46E5;">Ваш код:</span> <b>${shortId}</b><br>Продиктуйте ученику!`;
+            setupConnection();
         };
 
         document.getElementById('btnJoinRoom').onclick = () => {
@@ -1326,59 +1295,56 @@
             const statusEl = document.getElementById('collabStatus');
             statusEl.innerText = 'Подключение...';
             
-            // Уничтожаем старые подключения
-            if (window.boardPeer) window.boardPeer.destroy();
+            currentRoomRef = db.ref('rooms/' + roomId);
+            isTeacher = false;
             
-            window.boardPeer = new Peer(peerConfig);
-            
-            window.boardPeer.on('open', () => {
-                // Возвращаем надежный канал, так как мы решили проблему хэндшейком!
-                window.boardConn = window.boardPeer.connect(roomId, { reliable: true });
-                
-                window.boardConn.on('open', () => {
+            // Проверяем, существует ли комната в базе
+            currentRoomRef.once('value', (snapshot) => {
+                if (snapshot.exists()) {
                     statusEl.innerHTML = `<b style="color: #10B981;">🟢 Связь установлена!</b>`;
                     setupConnection();
-                    
-                    // Говорим учителю, что мы полностью готовы принять доску
-                    window.boardConn.send({ type: 'ready' });
-                });
-                
-                window.boardConn.on('error', (err) => {
-                    console.error(err);
-                    statusEl.innerHTML = `<b style="color: #EF4444;">Сбой канала</b>`;
-                });
-            });
-            
-            window.boardPeer.on('error', (err) => {
-                console.error(err);
-                statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка кода или связи</b>`;
+                } else {
+                    statusEl.innerHTML = `<b style="color: #EF4444;">Ошибка: Неверный код</b>`;
+                    currentRoomRef = null;
+                }
             });
         };
 
         function setupConnection() {
-            // Показываем чат при успешном соединении
             document.getElementById('chatArea').style.display = 'flex';
+            document.getElementById('chatMessages').innerHTML = '';
             
-            window.boardConn.on('data', (msg) => {
-                if (msg.type === 'ready') {
-                    // Учитель поймал сигнал готовности от ученика и теперь безопасно отправляет доску!
-                    window.boardConn.send({ type: 'sync', data: serializeCurrentSlide() });
-                } else if (msg.type === 'sync') {
-                    // Блокируем запись истории во время получения чужих данных
+            // Слушаем изменения доски из облака
+            currentRoomRef.child('syncData').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.sender !== (isTeacher ? 'teacher' : 'student')) {
                     isRestoringHistory = true;
-                    restoreSlideData(msg.data);
-                    slides[currentSlideIndex] = msg.data;
+                    restoreSlideData(data.state);
+                    slides[currentSlideIndex] = data.state;
                     isRestoringHistory = false;
-                } else if (msg.type === 'chat') {
-                    addChatMessage('Ученик', msg.text, '#EF4444');
-                } else if (msg.type === 'file') {
-                    const fileLink = `<a href="${msg.data}" download="${msg.filename}" style="color: #4F46E5; text-decoration: underline; font-weight: bold;">📁 Скачать: ${msg.filename}</a>`;
-                    addChatMessage('Ученик', fileLink, '#EF4444');
                 }
             });
-            window.boardConn.on('close', () => {
-                document.getElementById('collabStatus').innerHTML = `<b style="color: #EF4444;">Ученик отключился</b>`;
-                document.getElementById('chatArea').style.display = 'none';
+            
+            // Слушаем чат
+            currentRoomRef.child('chat').on('child_added', (snapshot) => {
+                const msg = snapshot.val();
+                if (msg) {
+                    const senderName = msg.sender === 'teacher' ? (isTeacher ? 'Вы' : 'Учитель') : (isTeacher ? 'Ученик' : 'Вы');
+                    const color = msg.sender === 'teacher' ? '#10B981' : '#EF4444';
+                    addChatMessage(senderName, msg.text, color);
+                }
+            });
+            
+            // Слушаем файлы
+            currentRoomRef.child('file').on('value', (snapshot) => {
+                const msg = snapshot.val();
+                if (msg && msg.timestamp > Date.now() - 5000) { 
+                    if (msg.sender !== (isTeacher ? 'teacher' : 'student')) {
+                        const senderName = isTeacher ? 'Ученик' : 'Учитель';
+                        const fileLink = `<a href="${msg.data}" download="${msg.filename}" style="color: #4F46E5; text-decoration: underline; font-weight: bold;">📁 Скачать: ${msg.filename}</a>`;
+                        addChatMessage(senderName, fileLink, isTeacher ? '#EF4444' : '#10B981');
+                    }
+                }
             });
         }
 
@@ -1386,19 +1352,21 @@
         function addChatMessage(sender, text, color) {
             const box = document.getElementById('chatMessages');
             const msgDiv = document.createElement('div');
-            // Если текст похож на ссылку, делаем его кликабельным
             const formattedText = text.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #4F46E5; text-decoration: underline;">$1</a>');
             msgDiv.innerHTML = `<b style="color: ${color};">${sender}:</b> <span style="word-break: break-word;">${formattedText}</span>`;
             box.appendChild(msgDiv);
-            box.scrollTop = box.scrollHeight; // Автоскролл вниз
+            box.scrollTop = box.scrollHeight;
         }
 
         document.getElementById('btnSendMsg').onclick = () => {
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
-            if (text && window.boardConn && window.boardConn.open) {
-                window.boardConn.send({ type: 'chat', text: text });
-                addChatMessage('Вы', text, '#10B981'); // Зеленый цвет для учителя
+            if (text && currentRoomRef) {
+                currentRoomRef.child('chat').push({
+                    sender: isTeacher ? 'teacher' : 'student',
+                    text: text,
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
                 input.value = '';
             }
         };
@@ -1418,8 +1386,13 @@ document.getElementById('btnSendFile').onclick = () => document.getElementById('
             
             const reader = new FileReader();
             reader.onload = (event) => {
-                if (window.boardConn && window.boardConn.open) {
-                    window.boardConn.send({ type: 'file', filename: file.name, data: event.target.result });
+                if (currentRoomRef) {
+                    currentRoomRef.child('file').set({
+                        sender: isTeacher ? 'teacher' : 'student',
+                        filename: file.name,
+                        data: event.target.result,
+                        timestamp: firebase.database.ServerValue.TIMESTAMP
+                    });
                     const fileLink = `<a href="${event.target.result}" download="${file.name}" style="color: #10B981; text-decoration: underline; font-weight: bold;">📁 ${file.name}</a>`;
                     addChatMessage('Вы', `Отправлен файл: ${fileLink}`, '#10B981');
                 } else {
