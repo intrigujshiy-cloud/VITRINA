@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска-Преподавателя EXPERT MAX PRO</title>
+    <title>Доска Преподавателя Английского EXPERT MAX PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Подключаем Firebase Cloud (Надежные сокеты) вместо PeerJS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -62,7 +62,10 @@
         }
         .draggable.rule-card { background: #ECFDF5; border-color: var(--rule-color); max-width: 520px; }
         .draggable:active { cursor: grabbing; }
-        .draggable .close-btn { position: absolute; top: -10px; right: -10px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .draggable .close-btn { position: absolute; top: -10px; right: -10px; background: #EF4444; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-weight: bold; padding: 0; display: flex; align-items: center; justify-content: center; line-height: 1; z-index: 2; }
+        .draggable .link-btn { position: absolute; top: -10px; right: 18px; background: #3B82F6; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1; }
+        .draggable .link-btn:hover { background: #2563EB; transform: scale(1.1); }
+        .draggable .link-btn.linking { background: #EF4444; animation: neonPulseDyn 1s infinite; }
         .draggable .content { outline: none; font-family: 'Segoe UI', Tahoma, sans-serif; margin-top: 8px; flex-grow: 1; line-height: 1.4; }
         .draggable.formula-card .content { font-family: 'Consolas', monospace; white-space: pre-wrap; font-size: 13px;}
         .example-text { color: #4B5563; font-style: italic; background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; display: inline-block; margin-top: 2px; margin-bottom: 8px; font-family: 'Segoe UI', Tahoma, sans-serif;}
@@ -194,6 +197,11 @@
         <button id="btnMarkers" class="btn-tool" style="color: #4F46E5; font-weight: bold;">✨ Рамки</button>
         
         <div class="separator"></div>
+        <button id="btnAiCheat" class="btn-tool teacher-only" style="background:#9c27b0; color:white; font-weight:bold; border-color:#9c27b0;">🤖 ИИ-Шпаргалка</button>
+        <button id="btnConfetti" class="btn-tool teacher-only" style="background:#ec4899; color:white; font-weight:bold; border-color:#ec4899;" title="Салют у ученика">🎉 Гениально!</button>
+        <button id="btnLockStudent" class="btn-tool teacher-only" style="background:#f59e0b; color:white; font-weight:bold; border-color:#f59e0b;" title="Блокировать доску ученика">🔒 Заткнись и смотри</button>
+        <div class="separator"></div>
+        
         <input type="color" id="colorPicker" value="#000000" title="Цвет карандаша">
         <input type="color" id="markerColorPicker" value="#10B981" title="Цвет рамок/указателей" style="border-color: #10B981; border-width: 2px;">
         
@@ -219,8 +227,13 @@
             <span>Комната связи</span>
             <button onclick="document.getElementById('collabPanel').style.display='none'" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #9CA3AF; padding: 0; line-height: 1;" title="Свернуть">✖</button>
         </div>
-        <button id="btnCreateRoom" style="background: #10B981; color: white; width: 100%; justify-content: center; padding: 8px;">1. Создать комнату</button>
-        <div style="text-align: center; margin: 2px 0; color: #6B7280; font-size: 12px;">или</div>
+        
+        <div class="teacher-only">
+            <button id="btnCreateRoom" style="background: #10B981; color: white; width: 100%; justify-content: center; padding: 8px;">Создать комнату</button>
+            <div style="text-align: center; margin: 5px 0; color: #6B7280; font-size: 12px; border-bottom: 1px dashed #ccc; padding-bottom: 5px;">Для ученика (скинь ссылку):<br><b id="studentLinkDisplay" style="color:#4F46E5; font-size:11px; user-select:all;">...</b></div>
+            <div style="text-align: center; margin: 2px 0; color: #6B7280; font-size: 12px;">или войти к другому:</div>
+        </div>
+        
         <input type="text" id="joinRoomId" placeholder="Код от учителя..." style="width: 100%; box-sizing: border-box; text-align: center;">
         <button id="btnJoinRoom" style="background: #4F46E5; color: white; width: 100%; justify-content: center; padding: 8px;">2. Войти к учителю</button>
         <div id="collabStatus" style="font-size: 13px; color: #6B7280; text-align: center; margin-top: 5px; background: #F9FAFB; padding: 5px; border-radius: 4px;">Отключено</div>
@@ -243,6 +256,17 @@
         <input type="file" id="bgImageInput" accept="image/*,.pdf" style="display: none;">
         
         <div class="separator"></div>
+        <select id="linkStyle" title="Стиль связей" style="color: #3B82F6; border-color: #3B82F6; font-weight: bold;">
+            <option value="dashed_arrow">Стрелка (пунктир)</option>
+            <option value="solid_arrow">Стрелка (сплошная)</option>
+            <option value="dashed_line">Линия (пунктир)</option>
+            <option value="solid_line">Линия (сплошная)</option>
+        </select>
+        <label style="display:flex; align-items:center; font-size:13px; color:#4B5563; cursor:pointer; font-weight:bold; background: white; padding: 4px 8px; border-radius: 6px; border: 1px solid #D1D5DB;">
+            <input type="checkbox" id="linkNumbering" style="margin-right: 5px;"> Нумерация (1,2,3)
+        </label>
+        
+        <div class="separator"></div>
         <button id="btnUndo" class="btn-tool" title="Шаг назад">↩️ Отменить</button>
         <button id="btnRedo" class="btn-tool" title="Шаг вперед">↪️ Вернуть</button>
         <button id="btnClear" class="btn-tool" style="color: #EF4444;">🗑️ Очистить слайд</button>
@@ -253,6 +277,8 @@
             <canvas id="whiteboard"></canvas>
             <canvas id="blindPreviewCanvas"></canvas>
             <canvas id="laserCanvas"></canvas>
+            <!-- Слой для умных стрелок -->
+            <svg id="smartArrowsLayer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 35;"></svg>
             <div id="draggablesContainer"></div>
             <!-- Корзина для удаления -->
             <div id="trashBin" style="position: absolute; bottom: 30px; right: 30px; width: 80px; height: 80px; background: rgba(255, 255, 255, 0.8); border: 3px dashed #EF4444; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 40px; opacity: 0.5; z-index: 50; transition: all 0.2s; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.2); pointer-events: none;">🗑️</div>
@@ -302,7 +328,42 @@
         </div>
     </div>
 
+    <!-- МОДАЛЬНОЕ ОКНО ИИ-ШПАРГАЛКИ (Gemini) -->
+    <div id="ai-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:999999; justify-content:center; align-items:center;">
+        <div style="background:#ffffff; color:#333; width:90%; max-width:600px; padding:25px; border-radius:12px; border:4px solid #9c27b0; box-shadow:0 10px 40px rgba(0,0,0,0.3); position:relative; font-family:sans-serif;">
+            <button onclick="document.getElementById('ai-modal').style.display='none'" style="position:absolute; top:15px; right:15px; background:#f44336; color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; font-size:16px;">✖</button>
+            <h3 style="margin-top:0; color:#9c27b0; border-bottom:2px solid #eee; padding-bottom:10px;">🤖 ИИ-Шпаргалка (Gemini 1.5)</h3>
+            
+            <div id="ai-key-container">
+                <label style="font-size:12px; color:#666; font-weight:bold;">API Ключ Gemini (Сохраняется в браузере):</label>
+                <input type="password" id="ai-api-key" placeholder="AIzaSy..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-bottom:15px; font-family:monospace; box-sizing: border-box;">
+            </div>
+            
+            <label style="font-size:12px; color:#666; font-weight:bold;">Что нужно вспомнить? (Например: Исключения Past Continuous):</label>
+            <input type="text" id="ai-topic" placeholder="Введите тему..." style="width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; margin-bottom:15px; box-sizing: border-box; font-size:14px;">
+            
+            <div id="ai-status" style="font-size:13px; color:#f59e0b; text-align:center; margin-bottom:10px; min-height:15px; font-weight:bold;"></div>
+            
+            <button id="ai-generate-btn" onclick="generateAiCheatSheet()" class="btn" style="background:#9c27b0; color:white; width:100%; font-size:14px; padding:10px; font-weight:bold; border:none; border-radius:6px; cursor:pointer;">✨ Сгенерировать шпаргалку</button>
+
+            <div id="ai-result" style="margin-top:15px; padding:15px; background:#f9fafb; border:1px solid #e5e7eb; border-radius:6px; font-size:14px; display:none; max-height: 250px; overflow-y: auto; white-space: pre-wrap; line-height: 1.5;"></div>
+        </div>
+    </div>
+
+    <!-- ПОЛОТНО ДЛЯ САЛЮТА -->
+    <canvas id="confetti-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none;"></canvas>
+
     <script>
+        // --- ПРОВЕРКА РОЛИ УЧЕНИКА ---
+        const isStudent = new URLSearchParams(window.location.search).get('role') === 'student';
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isStudent) {
+                // Вырубаем все читерские кнопки учителя
+                document.querySelectorAll('.teacher-only').forEach(el => el.style.display = 'none');
+                document.title = "Доска Ученика";
+            }
+        });
+
         // --- 1. ГЛОБАЛЬНАЯ БАЗА ---
         const grammarData = {
             
@@ -585,6 +646,65 @@
         let historyStack = [];
         let historyStep = -1;
         let isRestoringHistory = false;
+        
+        // --- ДВИЖОК УМНЫХ СТРЕЛОК ---
+        let smartLinks = [];
+        let linkingFrom = null;
+
+        function renderSmartArrows() {
+            const svg = document.getElementById('smartArrowsLayer');
+            if(!svg) return;
+            
+            const styleSelect = document.getElementById('linkStyle');
+            const numCheck = document.getElementById('linkNumbering');
+            const style = styleSelect ? styleSelect.value : 'dashed_arrow';
+            const showNumbers = numCheck ? numCheck.checked : false;
+
+            const isArrow = style.includes('arrow');
+            const isDashed = style.includes('dashed');
+
+            // Улучшенный маркер-стрелочка
+            let defsHtml = isArrow ? `<defs><marker id="smartArrowHead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#3B82F6" /></marker></defs>` : '';
+            let innerSvg = defsHtml;
+
+            smartLinks.forEach((link, index) => {
+                const el1 = document.getElementById(link.from); const el2 = document.getElementById(link.to);
+                if(el1 && el2) {
+                    const x1 = el1.offsetLeft + el1.offsetWidth / 2; const y1 = el1.offsetTop + el1.offsetHeight / 2;
+                    const x2 = el2.offsetLeft + el2.offsetWidth / 2; const y2 = el2.offsetTop + el2.offsetHeight / 2;
+                    const dx = x2 - x1; const dy = y2 - y1; const cx = x1 + dx/2 - dy/5; const cy = y1 + dy/2 + dx/5;
+                    
+                    // МАТЕМАТИКА: Вычисляем край карточки, чтобы стрелка не пряталась под ней
+                    const cpDx = cx - x2; const cpDy = cy - y2;
+                    const halfW = el2.offsetWidth / 2 + 5; const halfH = el2.offsetHeight / 2 + 5;
+                    let scale = 1;
+                    if (Math.abs(cpDx) > 0 || Math.abs(cpDy) > 0) {
+                        scale = Math.min(Math.abs(halfW / cpDx), Math.abs(halfH / cpDy));
+                    }
+                    const endX = x2 + cpDx * scale;
+                    const endY = y2 + cpDy * scale;
+                    
+                    const dashArray = isDashed ? '8,4' : 'none';
+                    const markerEnd = isArrow ? 'url(#smartArrowHead)' : 'none';
+                    
+                    // Линия теперь идет до endX/endY (край карточки), а не до x2/y2 (центр)
+                    innerSvg += `<path d="M ${x1} ${y1} Q ${cx} ${cy} ${endX} ${endY}" fill="none" stroke="#3B82F6" stroke-width="4" stroke-dasharray="${dashArray}" marker-end="${markerEnd}" />`;
+                    
+                    if (showNumbers) {
+                        const midX = 0.25 * x1 + 0.5 * cx + 0.25 * endX;
+                        const midY = 0.25 * y1 + 0.5 * cy + 0.25 * endY;
+                        innerSvg += `<circle cx="${midX}" cy="${midY}" r="12" fill="white" stroke="#3B82F6" stroke-width="2" /><text x="${midX}" y="${midY + 5}" font-family="sans-serif" font-size="14" font-weight="bold" fill="#3B82F6" text-anchor="middle">${index + 1}</text>`;
+                    }
+                }
+            });
+            svg.innerHTML = innerSvg;
+        }
+        
+        function removeLinksByCardId(id) {
+            if (linkingFrom === id) linkingFrom = null;
+            smartLinks = smartLinks.filter(l => l.from !== id && l.to !== id);
+            renderSmartArrows();
+        }
 
         const canvas = document.getElementById('whiteboard');
         const ctx = canvas.getContext('2d');
@@ -670,7 +790,7 @@
             
             if (currentMode === 'smart_eraser') {
                 const target = e.target.closest('.draggable') || e.target.closest('.blind-box');
-                if (target) { target.remove(); } else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+                if (target) { target.remove(); removeLinksByCardId(target.id); } else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
                 recordHistory(); return;
             }
 
@@ -756,9 +876,11 @@
 
         function createBlind(x, y, w, h) {
             const el = document.createElement('div'); el.className = 'blind-box';
+            el.id = 'blind_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = w + 'px'; el.style.height = h + 'px';
-            el.onclick = function(e) { this.remove(); recordHistory(); e.stopPropagation(); };
+            el.onclick = function(e) { this.remove(); removeLinksByCardId(el.id); recordHistory(); e.stopPropagation(); };
             draggablesContainer.appendChild(el);
+            return el;
         }
 
         function setMode(mode) {
@@ -1085,13 +1207,17 @@
             e.target.value = ''; // очистка
         };
         
-        document.getElementById('btnClear').onclick = () => { if(confirm('Очистить весь слайд?')) { ctx.clearRect(0, 0, canvas.width, canvas.height); draggablesContainer.innerHTML = ''; recordHistory(); } };
+        document.getElementById('btnClear').onclick = () => { if(confirm('Очистить весь слайд?')) { ctx.clearRect(0, 0, canvas.width, canvas.height); draggablesContainer.innerHTML = ''; smartLinks = []; renderSmartArrows(); recordHistory(); } };
         document.getElementById('bgSelector').onchange = function() { canvasContainer.className = 'canvas-container ' + this.value; canvasContainer.style.backgroundImage = ''; delete canvasContainer.dataset.customBg; recordHistory(); };
+        
+        document.getElementById('linkStyle').addEventListener('change', () => { renderSmartArrows(); recordHistory(); });
+        document.getElementById('linkNumbering').addEventListener('change', () => { renderSmartArrows(); recordHistory(); });
 
         // --- СОЗДАНИЕ КАРТОЧЕК ---
         function createDraggable(type, contentOrTopicKey, x, y, customTitle = '', customHtml = null) {
             const el = document.createElement('div');
             el.className = 'draggable ' + (type === 'text' ? 'text-box' : (type === 'emoji' ? 'emoji-box' : (type === 'rule' ? 'rule-card' : 'formula-card')));
+            el.id = 'card_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
             el.style.left = x + 'px'; el.style.top = y + 'px'; el.dataset.cardType = type;
             
             let displayTitle = customTitle, displayContent = contentOrTopicKey;
@@ -1105,10 +1231,23 @@
                 displayContent = (type === 'formula' ? grammarData[contentOrTopicKey].formula : grammarData[contentOrTopicKey].rule);
             }
             
-            // Крестик добавляется ТОЛЬКО если это не эмодзи
+            // Крестик и 🔗 добавляются ТОЛЬКО если это не эмодзи
             if (type !== 'emoji') {
                 const closeBtn = document.createElement('button'); closeBtn.className = 'close-btn'; closeBtn.innerHTML = '×';
-                closeBtn.onclick = () => { el.remove(); recordHistory(); }; el.appendChild(closeBtn);
+                closeBtn.onclick = () => { el.remove(); removeLinksByCardId(el.id); recordHistory(); }; el.appendChild(closeBtn);
+                
+                const linkBtn = document.createElement('button'); linkBtn.className = 'link-btn'; linkBtn.innerHTML = '🔗'; linkBtn.title = 'Связать умной стрелкой';
+                linkBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (linkingFrom === el.id) { linkingFrom = null; linkBtn.classList.remove('linking'); } 
+                    else if (linkingFrom) {
+                        smartLinks.push({ from: linkingFrom, to: el.id });
+                        const fromBtn = document.getElementById(linkingFrom)?.querySelector('.link-btn');
+                        if(fromBtn) fromBtn.classList.remove('linking');
+                        linkingFrom = null; renderSmartArrows(); recordHistory();
+                    } 
+                    else { linkingFrom = el.id; linkBtn.classList.add('linking'); }
+                }; el.appendChild(linkBtn);
             }
 
             if (type !== 'text' && type !== 'emoji') { const h4 = document.createElement('h4'); h4.contentEditable = true; h4.innerText = displayTitle; el.appendChild(h4); }
@@ -1140,12 +1279,13 @@
         // Удаление выделенного элемента по кнопке Delete или Backspace
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Delete' || e.key === 'Backspace') {
-                // Игнорируем, если курсор стоит в тексте (чтобы не удалить карточку при стирании букв внутри нее)
                 if (document.activeElement.isContentEditable || document.activeElement.tagName === 'INPUT') return;
                 
                 if (window.activeDraggable) {
+                    const id = window.activeDraggable.id;
                     window.activeDraggable.remove();
                     window.activeDraggable = null;
+                    removeLinksByCardId(id);
                     recordHistory();
                 }
             }
@@ -1154,39 +1294,36 @@
         function makeDraggableElement(el) {
             let isDraggingLoc = false, sX, sY, iX, iY;
             el.addEventListener('mousedown', e => {
-                window.activeDraggable = el; // Запоминаем элемент, по которому кликнули
-                window.lastActiveMarker = el; // Синхронизируем и с цветом рамки
+                window.activeDraggable = el; 
+                window.lastActiveMarker = el; 
                 
-                // Подсвечиваем корзину, чтобы показать, что в неё можно кидать
                 const trash = document.getElementById('trashBin');
                 if (trash) { trash.style.opacity = '1'; trash.style.transform = 'scale(1.1)'; trash.style.background = '#FEE2E2'; }
 
-                // Блокируем перетаскивание при активной шторке, чтобы она рисовалась без сдвига карточки
                 if(currentMode === 'blind') return;
                 
-                if(e.target.closest('.close-btn') || e.target.closest('.pull-btn') || e.target.tagName === 'SUMMARY' || e.target.closest('summary') || document.activeElement === e.target) return;
+                if(e.target.closest('.close-btn') || e.target.closest('.link-btn') || e.target.closest('.pull-btn') || e.target.tagName === 'SUMMARY' || e.target.closest('summary') || document.activeElement === e.target) return;
                 isDraggingLoc = true; sX = e.clientX; sY = e.clientY; iX = el.offsetLeft; iY = el.offsetTop; el.style.zIndex = 1000;
             });
             document.addEventListener('mousemove', e => { 
                 if(!isDraggingLoc) return; 
                 el.style.left = (iX + e.clientX - sX) + 'px'; 
                 el.style.top = (iY + e.clientY - sY) + 'px'; 
+                renderSmartArrows(); // Магия: стрелки двигаются вместе с карточкой!
             });
             document.addEventListener('mouseup', (e) => { 
-                // Возвращаем корзину в "спящий" режим
                 const trash = document.getElementById('trashBin');
                 if (trash) { trash.style.opacity = '0.5'; trash.style.transform = 'scale(1)'; trash.style.background = 'rgba(255, 255, 255, 0.8)'; }
 
                 if(isDraggingLoc) { 
                     isDraggingLoc = false; el.style.zIndex = ''; 
-                    
-                    // Логика броска в корзину
                     if (trash) {
                         const rect = trash.getBoundingClientRect();
-                        // Проверяем, находится ли мышка над корзиной при отпускании левой кнопки
                         if (e.clientX > rect.left && e.clientX < rect.right && e.clientY > rect.top && e.clientY < rect.bottom) {
+                            const id = el.id;
                             el.remove();
                             window.activeDraggable = null;
+                            removeLinksByCardId(id);
                         }
                     }
                     recordHistory(); 
@@ -1198,16 +1335,19 @@
         function serializeCurrentSlide() {
             const draggables = Array.from(draggablesContainer.children).map(el => {
                 if (el.classList.contains('blind-box')) {
-                    return { type: 'blind', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+                    return { id: el.id, type: 'blind', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
                 }
                 const openDetails = Array.from(el.querySelectorAll('details')).map((d, i) => d.open ? i : -1).filter(i => i !== -1);
-                return { type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails };
+                return { id: el.id, type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails };
             });
             return { 
                 drawing: canvas.toDataURL(), 
                 draggables: draggables, 
+                smartLinks: smartLinks, // Сохраняем связи для Firebase и Истории!
                 bg: document.getElementById('bgSelector').value,
-                customBg: canvasContainer.dataset.customBg || null // Сохраняем загруженную картинку
+                customBg: canvasContainer.dataset.customBg || null, // Сохраняем загруженную картинку
+                linkStyle: document.getElementById('linkStyle') ? document.getElementById('linkStyle').value : 'dashed_arrow',
+                linkNumbering: document.getElementById('linkNumbering') ? document.getElementById('linkNumbering').checked : false
             };
         }
 
@@ -1216,6 +1356,9 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (data.drawing) { const img = new Image(); img.onload = () => { ctx.drawImage(img, 0, 0); updateContextSettings(); }; img.src = data.drawing; }
             
+            if (data.linkStyle && document.getElementById('linkStyle')) document.getElementById('linkStyle').value = data.linkStyle;
+            if (typeof data.linkNumbering !== 'undefined' && document.getElementById('linkNumbering')) document.getElementById('linkNumbering').checked = data.linkNumbering;
+
             document.getElementById('bgSelector').value = data.bg || 'bg-lines';
             if (data.bg === 'custom' && data.customBg) {
                 canvasContainer.className = 'canvas-container';
@@ -1231,16 +1374,35 @@
             }
             
             draggablesContainer.innerHTML = '';
+            smartLinks = data.smartLinks || []; // ВОССТАНАВЛИВАЕМ СВЯЗИ
+            
             // ЗАЩИТА ОТ FIREBASE: если карточек нет, облако удаляет массив. Создаем пустой запасной []!
             const safeDraggables = data.draggables || [];
             safeDraggables.forEach(d => {
-                if (d.type === 'blind') { createBlind(parseInt(d.left), parseInt(d.top), parseInt(d.width), parseInt(d.height)); }
+                if (d.type === 'blind') { 
+                    const el = createBlind(parseInt(d.left), parseInt(d.top), parseInt(d.width), parseInt(d.height)); 
+                    if (d.id) el.id = d.id;
+                }
                 else {
                     const el = createDraggable(d.type, (d.type !== 'text' && d.topicKey) ? d.topicKey : d.content, parseInt(d.left), parseInt(d.top), d.title, d.type !== 'text' ? d.content : null);
+                    if (d.id) el.id = d.id; // Восстанавливаем точный ID для работы связей
+                    
                     if(d.type === 'text') el.querySelector('.content').innerText = d.content;
                     if(d.openDetails) { const details = el.querySelectorAll('details'); d.openDetails.forEach(index => { if(details[index]) details[index].open = true; }); }
+                    
+                    // ИСПРАВЛЕНИЕ: Снимаем рамки у стикеров и маркеров при сборке на стороне ученика!
+                    if (d.type === 'image') {
+                        el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
+                        const title = el.querySelector('h4'); if (title) title.remove();
+                        // Если это маркер (нет поля для ввода текста), убираем еще и красный крестик
+                        if (d.content && !d.content.includes('contenteditable="true"')) {
+                            const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
+                            const linkBtn = el.querySelector('.link-btn'); if (linkBtn) linkBtn.remove(); // Убираем скрепку у маркеров тоже
+                        }
+                    }
                 }
             });
+            renderSmartArrows(); // Рисуем восстановленные стрелки
             isRestoringHistory = false;
         }
 
@@ -1315,11 +1477,20 @@
             });
         };
 
+        let isBoardLocked = false;
+
         function setupConnection() {
             document.getElementById('chatArea').style.display = 'flex';
             document.getElementById('chatMessages').innerHTML = '';
             
-            // Слушаем изменения доски из облака
+            // Если мы учитель, генерируем ссылку, которую можно скинуть ученику
+            if (isTeacher) {
+                const studentUrl = window.location.origin + window.location.pathname + '?role=student';
+                const linkDisplay = document.getElementById('studentLinkDisplay');
+                if(linkDisplay) linkDisplay.innerText = studentUrl;
+            }
+            
+            // 1. Слушаем саму доску
             currentRoomRef.child('syncData').on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data && data.sender !== (isTeacher ? 'teacher' : 'student')) {
@@ -1328,6 +1499,39 @@
                     slides[currentSlideIndex] = data.state;
                     isRestoringHistory = false;
                 }
+            });
+
+            // 2. Слушаем блокировку "Заткнись и смотри"
+            currentRoomRef.child('locked').on('value', (snapshot) => {
+                if (!isTeacher) {
+                    const locked = snapshot.val();
+                    const boardArea = document.getElementById('boardArea');
+                    const toolsBar = document.querySelector('.tools-bar');
+                    if (locked) {
+                        boardArea.style.pointerEvents = 'none';
+                        boardArea.style.opacity = '0.8';
+                        if(toolsBar) toolsBar.style.pointerEvents = 'none';
+                        
+                        // Вешаем злую табличку
+                        const lockMsg = document.createElement('div');
+                        lockMsg.id = 'studentLockMsg';
+                        lockMsg.style.cssText = 'position:absolute; top:20px; left:50%; transform:translateX(-50%); background:#EF4444; color:white; padding:10px 20px; border-radius:8px; font-weight:bold; z-index:9999; box-shadow:0 4px 15px rgba(0,0,0,0.3);';
+                        lockMsg.innerText = '🔒 Учитель заблокировал доску. Внимание на экран!';
+                        document.body.appendChild(lockMsg);
+                    } else {
+                        boardArea.style.pointerEvents = 'auto';
+                        boardArea.style.opacity = '1';
+                        if(toolsBar) toolsBar.style.pointerEvents = 'auto';
+                        const lockMsg = document.getElementById('studentLockMsg');
+                        if (lockMsg) lockMsg.remove();
+                    }
+                }
+            });
+
+            // 3. Слушаем салют "Гениально!"
+            currentRoomRef.child('confetti').on('value', (snapshot) => {
+                const timestamp = snapshot.val();
+                if (timestamp && timestamp > Date.now() - 5000) fireConfetti();
             });
             
             // Слушаем чат
@@ -1353,7 +1557,7 @@
             });
         }
 
-        // --- ЛОГИКА ЧАТА ---
+        // --- ЛОГИКА ЧАТА И ФАЙЛОВ ---
         function addChatMessage(sender, text, color) {
             const box = document.getElementById('chatMessages');
             const msgDiv = document.createElement('div');
@@ -1367,22 +1571,16 @@
             const input = document.getElementById('chatInput');
             const text = input.value.trim();
             if (text && currentRoomRef) {
-                currentRoomRef.child('chat').push({
-                    sender: isTeacher ? 'teacher' : 'student',
-                    text: text,
-                    timestamp: firebase.database.ServerValue.TIMESTAMP
-                });
+                currentRoomRef.child('chat').push({ sender: isTeacher ? 'teacher' : 'student', text: text, timestamp: firebase.database.ServerValue.TIMESTAMP });
                 input.value = '';
             }
         };
         
-        document.getElementById('chatInput').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') document.getElementById('btnSendMsg').click();
-        });
+        document.getElementById('chatInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnSendMsg').click(); });
 
         document.getElementById('btnUndo').onclick = () => { if (historyStep > 0) { historyStep--; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
         document.getElementById('btnRedo').onclick = () => { if (historyStep < historyStack.length - 1) { historyStep++; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
-document.getElementById('btnSendFile').onclick = () => document.getElementById('chatFileInput').click();
+        document.getElementById('btnSendFile').onclick = () => document.getElementById('chatFileInput').click();
         
         document.getElementById('chatFileInput').onchange = (e) => {
             const file = e.target.files[0];
@@ -1400,10 +1598,8 @@ document.getElementById('btnSendFile').onclick = () => document.getElementById('
                     });
                     const fileLink = `<a href="${event.target.result}" download="${file.name}" style="color: #10B981; text-decoration: underline; font-weight: bold;">📁 ${file.name}</a>`;
                     addChatMessage('Вы', `Отправлен файл: ${fileLink}`, '#10B981');
-                } else {
-                    alert('Ученик не подключен!');
-                }
-                e.target.value = ''; // очистка
+                } else { alert('Ученик не подключен!'); }
+                e.target.value = ''; 
             };
             reader.readAsDataURL(file);
         };
@@ -1434,16 +1630,12 @@ document.getElementById('btnSendFile').onclick = () => document.getElementById('
 
         document.getElementById('btnAddSlide').onclick = () => {
             slides[currentSlideIndex] = serializeCurrentSlide();
-            slides.push({ id: Date.now(), drawing: '', draggables: [], bg: 'bg-lines' });
+            slides.push({ id: Date.now(), drawing: '', draggables: [], smartLinks: [], bg: 'bg-lines' });
             switchSlide(slides.length - 1);
         };
 
-        // КНОПКА УДАЛЕНИЯ СЛАЙДА
         document.getElementById('btnDeleteSlide').onclick = () => {
-            if (slides.length <= 1) {
-                alert("Это единственный слайд, его нельзя удалить! Вы можете просто очистить доску.");
-                return;
-            }
+            if (slides.length <= 1) { alert("Это единственный слайд, его нельзя удалить! Вы можете просто очистить доску."); return; }
             if (confirm("Вы уверены, что хотите удалить текущий слайд?")) {
                 slides.splice(currentSlideIndex, 1);
                 currentSlideIndex = Math.max(0, currentSlideIndex - 1);
@@ -1455,114 +1647,54 @@ document.getElementById('btnSendFile').onclick = () => document.getElementById('
             }
         };
 
-        // --- СОХРАНЕНИЕ / ПРЕСЕТЫ ---
-        function saveToLocalStorage() {
-            slides[currentSlideIndex] = serializeCurrentSlide();
-            localStorage.setItem('boardExpertMaxFullBase', JSON.stringify(slides));
-        }
-
-        function loadApp() {
-            const saved = localStorage.getItem('boardExpertMaxFullBase');
-            if (saved) {
-                try { slides = JSON.parse(saved); } catch(e) { console.error(e); }
-            }
-            switchSlide(0); 
-        }
+        function saveToLocalStorage() { slides[currentSlideIndex] = serializeCurrentSlide(); localStorage.setItem('boardExpertMaxFullBase', JSON.stringify(slides)); }
+        function loadApp() { const saved = localStorage.getItem('boardExpertMaxFullBase'); if (saved) { try { slides = JSON.parse(saved); } catch(e) { console.error(e); } } switchSlide(0); }
 
         document.getElementById('btnSavePreset').onclick = () => {
             slides[currentSlideIndex] = serializeCurrentSlide();
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(slides));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href",     dataStr);
-            downloadAnchorNode.setAttribute("download", "lesson_preset.json");
-            document.body.appendChild(downloadAnchorNode); downloadAnchorNode.click(); downloadAnchorNode.remove();
+            const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "lesson_preset.json");
+            document.body.appendChild(dl); dl.click(); dl.remove();
         };
 
         document.getElementById('btnLoadPreset').onclick = () => document.getElementById('importFile').click();
         document.getElementById('importFile').onchange = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const file = e.target.files[0]; if (!file) return;
             const reader = new FileReader();
-            reader.onload = function(e) {
-                try { slides = JSON.parse(e.target.result); switchSlide(0); } 
-                catch(err) { alert("Ошибка файла!"); }
-            };
+            reader.onload = function(e) { try { slides = JSON.parse(e.target.result); switchSlide(0); } catch(err) { alert("Ошибка файла!"); } };
             reader.readAsText(file);
         };
 
         document.getElementById('btnSavePNG').addEventListener('click', () => {
             const instruction = document.querySelector('.instruction');
-            if (instruction) instruction.style.display = 'none'; 
-            
+            if (instruction) instruction.style.display = 'none';
             html2canvas(document.getElementById('boardArea')).then(canvas => {
-                const link = document.createElement('a'); 
-                link.download = 'board_screenshot.png'; 
-                link.href = canvas.toDataURL(); 
-                link.click();
+                const link = document.createElement('a'); link.download = 'board_screenshot.png'; link.href = canvas.toDataURL(); link.click();
                 if (instruction) instruction.style.display = 'block';
             }).catch(err => console.error("Ошибка скриншота: ", err));
         });
 
-        // --- ВСТАВКА КАРТИНОК ИЗ БУФЕРА ОБМЕНА (Ctrl+V / Cmd+V) ---
         document.addEventListener('paste', (e) => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (let i = 0; i < items.length; i++) {
                 if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
-                    const file = items[i].getAsFile();
-                    const reader = new FileReader();
+                    const file = items[i].getAsFile(); const reader = new FileReader();
                     reader.onload = (event) => {
-                        // Обертке добавлен display: flex, чтобы убрать скрытые отступы. Кружок уменьшен и прижат к углу.
-                        const imgHtml = `<div class="img-resize-wrapper" style="position: relative; width: 100%; display: flex;">
-                            <img src="${event.target.result}" style="width: 100%; border-radius: 6px; pointer-events: none; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.15);">
-                            <div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; background: rgba(0,0,0,0.2); cursor: nwse-resize; z-index: 10; clip-path: polygon(100% 0, 100% 100%, 0 100%);"></div>
-                        </div>`;
-                        
+                        const imgHtml = `<div class="img-resize-wrapper" style="position: relative; width: 100%; display: flex;"><img src="${event.target.result}" style="width: 100%; border-radius: 6px; pointer-events: none; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.15);"><div class="resize-handle" style="position: absolute; right: 0; bottom: 0; width: 20px; height: 20px; background: rgba(0,0,0,0.2); cursor: nwse-resize; z-index: 10; clip-path: polygon(100% 0, 100% 100%, 0 100%);"></div></div>`;
                         const el = createDraggable('image', 'clipboard_image', 150, 150, '', imgHtml);
-                        
-                        // Полностью очищаем карточку от зеленой подложки, рамок и отступов
-                        el.style.background = 'transparent';
-                        el.style.border = 'none';
-                        el.style.padding = '0';
-                        el.style.boxShadow = 'none';
-                        
-                        // Удаляем заголовок карточки
-                        const title = el.querySelector('h4');
-                        if (title) title.remove();
-
-                        // Удаляем красный крестик. Умный ластик все равно сможет удалить этот скриншот.
-                        const closeBtn = el.querySelector('.close-btn');
-                        if (closeBtn) closeBtn.remove();
-                        
-                        // Убираем внутренние отступы у контента
-                        const content = el.querySelector('.content');
-                        if (content) content.style.marginTop = '0';
-
-                        el.style.maxWidth = 'none';
-                        el.style.minWidth = '150px'; 
-                        el.style.width = '350px'; 
-                        
+                        el.style.background = 'transparent'; el.style.border = 'none'; el.style.padding = '0'; el.style.boxShadow = 'none';
+                        const title = el.querySelector('h4'); if (title) title.remove();
+                        const closeBtn = el.querySelector('.close-btn'); if (closeBtn) closeBtn.remove();
+                        const content = el.querySelector('.content'); if (content) content.style.marginTop = '0';
+                        el.style.maxWidth = 'none'; el.style.minWidth = '150px'; el.style.width = '350px'; 
                         const handle = el.querySelector('.resize-handle');
-                        
                         handle.addEventListener('mousedown', (mouseEvent) => {
                             mouseEvent.stopPropagation();
-                            const startW = el.offsetWidth;
-                            const startX = mouseEvent.clientX;
-                            
-                            const onMouseMove = (moveEvt) => {
-                                const newW = startW + (moveEvt.clientX - startX);
-                                if (newW > 150) el.style.width = newW + 'px'; 
-                            };
-                            
-                            const onMouseUp = () => {
-                                document.removeEventListener('mousemove', onMouseMove);
-                                document.removeEventListener('mouseup', onMouseUp);
-                                recordHistory();
-                            };
-                            
-                            document.addEventListener('mousemove', onMouseMove);
-                            document.addEventListener('mouseup', onMouseUp);
+                            const startW = el.offsetWidth; const startX = mouseEvent.clientX;
+                            const onMouseMove = (moveEvt) => { const newW = startW + (moveEvt.clientX - startX); if (newW > 150) el.style.width = newW + 'px'; };
+                            const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); recordHistory(); };
+                            document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
                         });
-                        
                         recordHistory();
                     };
                     reader.readAsDataURL(file);
@@ -1605,6 +1737,146 @@ document.getElementById('btnSendFile').onclick = () => document.getElementById('
             const topicKey = document.getElementById('topicSelector').value; if (topicKey === 'none') return;
             createDraggable('formula', topicKey, canvasContainer.clientWidth/2-150, 100); recordHistory();
         });
+
+        // --- АНТИСТРЕСС ФУНКЦИИ УЧИТЕЛЯ ---
+
+        // 1. Кнопка "Заткнись и смотри" (Блокировка)
+        document.getElementById('btnLockStudent').addEventListener('click', function() {
+            if (!currentRoomRef) { alert('Сначала создайте комнату связи!'); return; }
+            isBoardLocked = !isBoardLocked;
+            currentRoomRef.child('locked').set(isBoardLocked);
+            
+            if (isBoardLocked) {
+                this.style.background = '#EF4444'; // Красный
+                this.style.borderColor = '#EF4444';
+                this.innerText = '🔓 Разблокировать доску';
+            } else {
+                this.style.background = '#f59e0b'; // Оранжевый
+                this.style.borderColor = '#f59e0b';
+                this.innerText = '🔒 Заткнись и смотри';
+            }
+        });
+
+        // 2. Кнопка "Гениально!" (Салют Конфетти)
+        document.getElementById('btnConfetti').addEventListener('click', function() {
+            fireConfetti(); // Себе тоже запускаем для радости!
+            if (currentRoomRef) {
+                currentRoomRef.child('confetti').set(firebase.database.ServerValue.TIMESTAMP);
+            }
+        });
+
+        let confettiParticles = [];
+        let confettiCvs, confettiCtx, confettiTimer;
+
+        function fireConfetti() {
+            confettiCvs = document.getElementById('confetti-canvas');
+            confettiCtx = confettiCvs.getContext('2d');
+            confettiCvs.width = window.innerWidth;
+            confettiCvs.height = window.innerHeight;
+            confettiCvs.style.display = 'block';
+            
+            confettiParticles = [];
+            const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4CAF50', '#8BC34A', '#CDDC39', '#FFEB3B', '#FFC107', '#FF9800', '#FF5722'];
+            
+            for (let i = 0; i < 200; i++) {
+                confettiParticles.push({
+                    x: confettiCvs.width / 2,
+                    y: confettiCvs.height / 2 + 150,
+                    vx: (Math.random() - 0.5) * 35,
+                    vy: (Math.random() - 1) * 30 - 5,
+                    size: Math.random() * 12 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    rot: Math.random() * 360,
+                    rotSpeed: (Math.random() - 0.5) * 15
+                });
+            }
+
+            if (confettiTimer) clearInterval(confettiTimer);
+            
+            confettiTimer = setInterval(() => {
+                confettiCtx.clearRect(0, 0, confettiCvs.width, confettiCvs.height);
+                let active = false;
+                confettiParticles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vy += 0.6; // гравитация
+                    p.rot += p.rotSpeed;
+                    if (p.y < confettiCvs.height + 20) {
+                        active = true;
+                        confettiCtx.save();
+                        confettiCtx.translate(p.x, p.y);
+                        confettiCtx.rotate(p.rot * Math.PI / 180);
+                        confettiCtx.fillStyle = p.color;
+                        confettiCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                        confettiCtx.restore();
+                    }
+                });
+                if (!active) {
+                    clearInterval(confettiTimer);
+                    confettiCvs.style.display = 'none';
+                }
+            }, 30);
+        }
+
+        // 3. ИИ-Шпаргалка (Интеграция с 3.5 Flash-Light)
+        document.getElementById('btnAiCheat').addEventListener('click', () => {
+            document.getElementById('ai-modal').style.display = 'flex';
+            let savedKey = localStorage.getItem('expert_ai_key');
+            if (savedKey) document.getElementById('ai-api-key').value = savedKey;
+            document.getElementById('ai-topic').focus();
+        });
+
+        async function generateAiCheatSheet() {
+            const btn = document.getElementById('ai-generate-btn');
+            const apiKey = document.getElementById('ai-api-key').value.trim();
+            const topic = document.getElementById('ai-topic').value.trim();
+            const status = document.getElementById('ai-status');
+            const resultBox = document.getElementById('ai-result');
+
+            if (!apiKey) { alert("⚠️ Введите API ключ Gemini!"); return; }
+            if (!topic) { alert("⚠️ Введите тему (например, 'Исключения Past Simple')!"); return; }
+
+            localStorage.setItem('expert_ai_key', apiKey);
+            
+            btn.disabled = true; btn.style.opacity = '0.5';
+            btn.innerText = "⏳ Мозг думает (собираю конспект)...";
+            status.innerText = ""; resultBox.style.display = 'none';
+
+            let promptText = `Ты — эксперт-преподаватель английского языка. Напиши краткую, емкую и очень понятную шпаргалку для учителя по теме: "${topic}". 
+Обязательно включи:
+1. Основное правило (кратко).
+2. Формулу (если есть).
+3. Основные маркеры/слова-подсказки.
+4. Исключения или главные ошибки, которые делают ученики (ловушки).
+5. 3-4 наглядных примера.
+Не пиши лишней воды. Структурируй через списки и переносы строк.`;
+
+            try {
+                // Системный адрес Google, обрабатывающий запросы
+                const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+                
+                if (!response.ok) throw new Error("Код: " + response.status);
+                
+                const data = await response.json();
+                let aiText = data.candidates[0].content.parts[0].text.trim();
+                
+                // Простая очистка Markdown (звездочек), чтобы текст выглядел опрятно
+                aiText = aiText.replace(/\*\*/g, '');
+                
+                resultBox.innerHTML = '<b>Ваша шпаргалка:</b><br><br>' + aiText;
+                resultBox.style.display = 'block';
+            } catch (e) {
+                console.error(e);
+                status.innerText = "❌ Ошибка: " + e.message + ". Проверьте VPN или правильность ключа.";
+            } finally {
+                btn.disabled = false; btn.style.opacity = '1';
+                btn.innerText = "✨ Сгенерировать шпаргалку";
+            }
+        }
 
         // ИНИЦИАЛИЗАЦИЯ
         window.onload = () => {
