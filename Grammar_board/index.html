@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Доска Преподавателя EXPERT MAX PRO</title>
+    <title>Доска-Преподавателя EXPERT MAX PRO</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <!-- Подключаем Firebase Cloud (Надежные сокеты) вместо PeerJS -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -214,8 +214,11 @@
     </div>
 
     <!-- Панель совместного доступа -->
-    <div id="collabPanel" style="display: none; position: absolute; top: 90px; right: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 10px; border: 2px solid #10B981; font-size: 14px;">
-        <div style="font-weight: bold; color: #10B981; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px;">Комната связи (P2P)</div>
+    <div id="collabPanel" style="display: none; position: absolute; top: 90px; right: 15px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 1000; flex-direction: column; gap: 10px; border: 2px solid #10B981; font-size: 14px; width: 260px;">
+        <div style="font-weight: bold; color: #10B981; border-bottom: 1px solid #E5E7EB; padding-bottom: 4px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Комната связи</span>
+            <button onclick="document.getElementById('collabPanel').style.display='none'" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #9CA3AF; padding: 0; line-height: 1;" title="Свернуть">✖</button>
+        </div>
         <button id="btnCreateRoom" style="background: #10B981; color: white; width: 100%; justify-content: center; padding: 8px;">1. Создать комнату</button>
         <div style="text-align: center; margin: 2px 0; color: #6B7280; font-size: 12px;">или</div>
         <input type="text" id="joinRoomId" placeholder="Код от учителя..." style="width: 100%; box-sizing: border-box; text-align: center;">
@@ -1228,7 +1231,9 @@
             }
             
             draggablesContainer.innerHTML = '';
-            data.draggables.forEach(d => {
+            // ЗАЩИТА ОТ FIREBASE: если карточек нет, облако удаляет массив. Создаем пустой запасной []!
+            const safeDraggables = data.draggables || [];
+            safeDraggables.forEach(d => {
                 if (d.type === 'blind') { createBlind(parseInt(d.left), parseInt(d.top), parseInt(d.width), parseInt(d.height)); }
                 else {
                     const el = createDraggable(d.type, (d.type !== 'text' && d.topicKey) ? d.topicKey : d.content, parseInt(d.left), parseInt(d.top), d.title, d.type !== 'text' ? d.content : null);
