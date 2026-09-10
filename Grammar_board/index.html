@@ -240,6 +240,7 @@
         <div class="separator"></div>
         <button id="btnUndo" class="btn-tool" title="Шаг назад">↩️ Отменить</button>
         <button id="btnRedo" class="btn-tool" title="Шаг вперед">↪️ Вернуть</button>
+        <button id="btnUndoStudent" class="btn-tool teacher-only" style="color: #EF4444; font-weight: bold;" title="Удалить мазню ученика">🚫 Откат ученика</button>
         <button id="btnClear" class="btn-tool" style="color: #EF4444;">🗑️ Очистить</button>
     </div>
 
@@ -804,7 +805,10 @@
             
             if (currentMode === 'smart_eraser') {
                 const target = e.target.closest('.draggable') || e.target.closest('.blind-box');
-                if (target) { target.remove(); removeLinksByCardId(target.id); } else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
+                if (target) { 
+                    if (target.dataset.isLocked === 'true') { alert('Элемент заблокирован! Сначала снимите замочек.'); return; }
+                    target.remove(); removeLinksByCardId(target.id); 
+                } else { ctx.clearRect(0, 0, canvas.width, canvas.height); }
                 recordHistory(); return;
             }
 
@@ -1244,10 +1248,13 @@
                 displayContent = (type === 'formula' ? grammarData[contentOrTopicKey].formula : grammarData[contentOrTopicKey].rule);
             }
             
-            /// Крестик и Скрепка (для всех, кроме эмодзи)
+            //// Крестик и Скрепка (для всех, кроме эмодзи)
             if (type !== 'emoji') {
                 const closeBtn = document.createElement('button'); closeBtn.className = 'close-btn'; closeBtn.innerHTML = '×';
-                closeBtn.onclick = () => { el.remove(); if(typeof removeLinksByCardId === 'function') removeLinksByCardId(el.id); recordHistory(); }; el.appendChild(closeBtn);
+                closeBtn.onclick = () => { 
+                    if (el.dataset.isLocked === 'true') { alert('Сначала снимите замочек!'); return; }
+                    el.remove(); if(typeof removeLinksByCardId === 'function') removeLinksByCardId(el.id); recordHistory(); 
+                }; el.appendChild(closeBtn);
                 
                 const linkBtn = document.createElement('button'); linkBtn.className = 'link-btn'; linkBtn.innerHTML = '🔗'; linkBtn.title = 'Связать умной стрелкой';
                 linkBtn.onclick = (e) => {
@@ -1283,6 +1290,28 @@
                 recordHistory();
                 renderSmartArrows(); // Перерисовываем стрелки (чтобы исчезли/появились)
             }; el.appendChild(eyeBtn);
+
+            /// Замочек (видит только учитель)
+            const lockBtn = document.createElement('button'); lockBtn.className = 'lock-btn teacher-only'; lockBtn.innerHTML = '🔓'; lockBtn.title = 'Прибить гвоздями (Заблокировать)';
+            lockBtn.style.cssText = 'position: absolute; top: -10px; right: 74px; background: #F59E0B; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1;';
+            if (type === 'emoji') { lockBtn.style.right = '28px'; lockBtn.style.top = '-20px'; }
+            lockBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isLocked = el.dataset.isLocked === 'true';
+                const resizer = el.querySelector('div[style*="nwse-resize"]');
+                if (isLocked) {
+                    el.dataset.isLocked = 'false';
+                    lockBtn.innerHTML = '🔓';
+                    lockBtn.style.background = '#F59E0B';
+                    if (resizer) resizer.style.display = 'block';
+                } else {
+                    el.dataset.isLocked = 'true';
+                    lockBtn.innerHTML = '🔒';
+                    lockBtn.style.background = '#EF4444';
+                    if (resizer) resizer.style.display = 'none';
+                }
+                recordHistory();
+            }; el.appendChild(lockBtn);
 
             /// Кнопка палитры ТОЛЬКО для стикеров
             if (customHtml && customHtml.includes('sticker-content')) {
@@ -1338,6 +1367,7 @@
                 if (document.activeElement.isContentEditable || document.activeElement.tagName === 'INPUT') return;
                 
                 if (window.activeDraggable) {
+                    if (window.activeDraggable.dataset.isLocked === 'true') return; // Запрещаем удалять прибитое
                     const id = window.activeDraggable.id;
                     window.activeDraggable.remove();
                     window.activeDraggable = null;
@@ -1358,7 +1388,10 @@
 
                 if(currentMode === 'blind') return;
                 
-                if(e.target.closest('.close-btn') || e.target.closest('.link-btn') || e.target.closest('.pull-btn') || e.target.tagName === 'SUMMARY' || e.target.closest('summary') || document.activeElement === e.target) return;
+                if(e.target.closest('.close-btn') || e.target.closest('.link-btn') || e.target.closest('.lock-btn') || e.target.closest('.pull-btn') || e.target.tagName === 'SUMMARY' || e.target.closest('summary') || document.activeElement === e.target) return;
+                
+                if (el.dataset.isLocked === 'true') return; // Блокировка движения!
+                
                 isDraggingLoc = true; sX = e.clientX; sY = e.clientY; iX = el.offsetLeft; iY = el.offsetTop; el.style.zIndex = 1000;
             });
             document.addEventListener('mousemove', e => { 
@@ -1394,7 +1427,7 @@
                     return { id: el.id, type: 'blind', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
                 }
                 const openDetails = Array.from(el.querySelectorAll('details')).map((d, i) => d.open ? i : -1).filter(i => i !== -1);
-                return { id: el.id, type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails, isHidden: el.dataset.isHidden || 'false' };
+                return { id: el.id, type: el.dataset.cardType || 'text', topicKey: el.dataset.topicKey || '', left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height, title: el.querySelector('h4') ? el.querySelector('h4').innerText : '', content: el.querySelector('.content').innerHTML, openDetails: openDetails, isHidden: el.dataset.isHidden || 'false', isLocked: el.dataset.isLocked || 'false' };
             });
             return { 
                 drawing: canvas.toDataURL(), 
@@ -1443,6 +1476,17 @@
                     const el = createDraggable(d.type, (d.type !== 'text' && d.topicKey) ? d.topicKey : d.content, parseInt(d.left), parseInt(d.top), d.title, d.type !== 'text' ? d.content : null);
                     if (d.id) el.id = d.id; // Восстанавливаем точный ID для работы связей
                     
+                    if (d.width) el.style.width = d.width;
+                    if (d.height) el.style.height = d.height;
+                    
+                    if (d.isLocked === 'true') {
+                        el.dataset.isLocked = 'true';
+                        const lockBtn = el.querySelector('.lock-btn');
+                        if (lockBtn) { lockBtn.innerHTML = '🔒'; lockBtn.style.background = '#EF4444'; }
+                        const resizer = el.querySelector('div[style*="nwse-resize"]');
+                        if (resizer) resizer.style.display = 'none';
+                    }
+                    
                     if(d.type === 'text') el.querySelector('.content').innerText = d.content;
                     if(d.openDetails) { const details = el.querySelectorAll('details'); d.openDetails.forEach(index => { if(details[index]) details[index].open = true; }); }
                     
@@ -1471,6 +1515,7 @@
             isRestoringHistory = false;
         }
 
+        let lastTeacherState = null;
         function recordHistory() {
             if(isRestoringHistory) return;
             historyStep++;
@@ -1481,8 +1526,10 @@
             
             // Отправляем слайд в облако Firebase
             if (typeof currentRoomRef !== 'undefined' && currentRoomRef) {
+                const senderRole = typeof isTeacher !== 'undefined' && isTeacher ? 'teacher' : 'student';
+                if (senderRole === 'teacher') lastTeacherState = state;
                 currentRoomRef.child('syncData').set({
-                    sender: typeof isTeacher !== 'undefined' && isTeacher ? 'teacher' : 'student',
+                    sender: senderRole,
                     state: state,
                     timestamp: firebase.database.ServerValue.TIMESTAMP
                 });
@@ -1653,6 +1700,19 @@
 
         document.getElementById('btnUndo').onclick = () => { if (historyStep > 0) { historyStep--; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
         document.getElementById('btnRedo').onclick = () => { if (historyStep < historyStack.length - 1) { historyStep++; restoreSlideData(historyStack[historyStep]); saveToLocalStorage(); } };
+        
+        if (document.getElementById('btnUndoStudent')) {
+            document.getElementById('btnUndoStudent').onclick = () => {
+                if (typeof isTeacher !== 'undefined' && isTeacher && lastTeacherState) {
+                    restoreSlideData(lastTeacherState);
+                    recordHistory(); // Перезаписываем и отправляем ученику чистую версию
+                    addChatMessage('Вы', '🚫 Отменил действия ученика (Возврат к версии учителя)', '#EF4444');
+                } else {
+                    alert('Пока нет сохраненного состояния учителя для отката! Сделайте любое действие на доске.');
+                }
+            };
+        }
+
         document.getElementById('btnSendFile').onclick = () => document.getElementById('chatFileInput').click();
         
         document.getElementById('chatFileInput').onchange = (e) => {
