@@ -122,6 +122,24 @@
         .action-btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 15px var(--primary); }
         .action-btn.start-btn { background: var(--success); color: #000; border-color: var(--success); font-size: 1.5rem; padding: 15px 40px; }
 
+        ..random-tracker-box {
+            background: rgba(0, 255, 255, 0.07);
+            border: 2px dashed var(--primary);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .random-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
         .search-container { margin-bottom: 15px; }
 
         .verbs-container {
@@ -138,6 +156,7 @@
 
         .verb-checkbox { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; cursor: pointer; transition: 0.2s;}
         .verb-checkbox input { accent-color: var(--primary); width: 16px; height: 16px; }
+        .verb-checkbox.used-verb span { color: #666; text-decoration: line-through; }
 
         #game-panel { display: none; width: 100%; max-width: 1100px; }
         .stage-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;}
@@ -288,6 +307,11 @@
                     <option value="Bungee">Bungee (Arcade)</option>
                     <option value="VT323">VT323 (Terminal)</option>
                     <option value="Creepster">Creepster (Horror)</option>
+                    <option value="Times New Roman">Times New Roman (Classic)</option>
+                    <option value="Comic Sans MS">Comic Sans MS (Friendly)</option>
+                    <option value="Arial">Arial (Easy Read)</option>
+                    <option value="Verdana">Verdana (Clear & Wide)</option>
+                    <option value="Trebuchet MS">Trebuchet MS (Clean & Modern)</option>
                 </select>
 
                 <label style="display:block; margin-top: 25px; color: var(--success); cursor: pointer; font-size: 1.1rem; border: 1px dashed var(--success); padding: 10px; border-radius: 5px; background: rgba(0,255,102,0.1);">
@@ -311,6 +335,23 @@
                     <button class="action-btn" style="flex: 1; font-size:0.8rem;" onclick="addCustomVerbs()">Save Custom</button>
                     <button class="action-btn" style="flex: 1; font-size:0.8rem; border-color: var(--danger); color: var(--danger);" onclick="clearCustomVerbs()">Clear Custom</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="random-tracker-box">
+            <div class="random-controls">
+                <label style="color: var(--primary); cursor: pointer; font-size: 1.1rem; font-weight: bold; display: flex; align-items: center;">
+                    <input type="checkbox" id="random-10-mode" onchange="toggleRandom10Mode(this)" style="width: 20px; height: 20px; accent-color: var(--primary); margin-right: 12px;">
+                    🎲 Повторить 10 рандомных глаголов (без повторов с прошлых уроков)
+                </label>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <span id="random-progress-text" style="color: var(--success); font-size: 0.95rem; font-weight: bold;">Пройдено: 0 / 100</span>
+                    <button class="action-btn" style="padding: 8px 15px; font-size: 0.85rem; border-color: var(--success); color: var(--success);" onclick="pickRandom10Unseen()">🎲 Выбрать 10 новых</button>
+                    <button class="action-btn" style="padding: 8px 15px; font-size: 0.85rem; border-color: var(--danger); color: var(--danger);" onclick="resetRandomHistory()">🔄 Сбросить историю</button>
+                </div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--accent);">
+                💡 *При нажатии «START GAME 🚀» выбранные глаголы автоматически помечаются как пройденные (✅) и не будут попадаться в следующих случайных десятках, пока вы не пройдете все 100 слов.*
             </div>
         </div>
 
@@ -345,6 +386,7 @@
             <button class="stage-btn" id="btn-4" onclick="showTab(4)">4. Matrix Match</button>
             <button class="stage-btn" id="btn-5" onclick="showTab(5)">5. Code Inject</button>
             <button class="stage-btn" id="btn-6" onclick="showTab(6)">6. Full Override</button>
+            <button class="stage-btn" id="mute-btn" style="border-color:var(--success); color:var(--success);" onclick="toggleSound()">🔊 Sound ON</button>
             <button class="stage-btn" style="background:var(--danger); color:#fff; border-color:var(--danger);" onclick="location.reload()">⚙️ Reboot</button>
         </div>
 
@@ -461,9 +503,26 @@
         let customDB = JSON.parse(localStorage.getItem('gamer_verbs_custom') || '[]');
         let fullDB = [...customDB, ...initialDB];
         let savedSelection = JSON.parse(localStorage.getItem('gamer_verbs_selection') || '[]');
+        let usedRandomVerbs = JSON.parse(localStorage.getItem('gamer_verbs_random_used') || '[]');
         let playList = [];
         let preferredVoice = null;
         let isTwoForms = false; // НОВАЯ ПЕРЕМЕННАЯ ДЛЯ 2 ФОРМ
+        let isMuted = false;
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            const btn = document.getElementById('mute-btn');
+            if (isMuted) {
+                window.speechSynthesis.cancel();
+                btn.innerHTML = '🔇 Sound OFF';
+                btn.style.borderColor = 'var(--accent)';
+                btn.style.color = 'var(--accent)';
+            } else {
+                btn.innerHTML = '🔊 Sound ON';
+                btn.style.borderColor = 'var(--success)';
+                btn.style.color = 'var(--success)';
+            }
+        }
 
         function setBestVoice() {
             let voices = window.speechSynthesis.getVoices();
@@ -474,6 +533,7 @@
         window.speechSynthesis.onvoiceschanged = setBestVoice;
 
         function speak(v1, v2, v3) {
+            if (isMuted) return;
             let text = v3 ? `${v1}, ${v2}, ${v3}` : `${v1}, ${v2}`;
             let u = new SpeechSynthesisUtterance(text);
             u.lang = 'en-US'; u.rate = 0.95; u.pitch = 1.0;
@@ -510,11 +570,59 @@
         }
         // ----------------------------------------
 
+        // --- ФУНКЦИИ УМНОГО РАНДОМА БЕЗ ПОВТОРОВ ---
+        function updateRandomProgressUI() {
+            const validUsed = usedRandomVerbs.filter(v1 => fullDB.some(dbV => dbV.v1 === v1));
+            document.getElementById('random-progress-text').innerText = `Пройдено: ${validUsed.length} / ${fullDB.length}`;
+        }
+
+        function toggleRandom10Mode(cb) {
+            if (cb.checked) {
+                pickRandom10Unseen();
+            }
+        }
+
+        function pickRandom10Unseen() {
+            document.getElementById('random-10-mode').checked = true;
+            let available = fullDB.filter(v => !usedRandomVerbs.includes(v.v1));
+
+            if (available.length === 0) {
+                alert("🎉 Поздравляем! Вы уже повторили абсолютно все глаголы из списка! История обнуляется, начинаем новый круг.");
+                usedRandomVerbs = [];
+                localStorage.setItem('gamer_verbs_random_used', JSON.stringify(usedRandomVerbs));
+                available = [...fullDB];
+            }
+
+            let picked = shuffle(available).slice(0, 10);
+            let pickedV1s = picked.map(v => v.v1);
+
+            document.querySelectorAll('.verb-checkbox input').forEach(cb => {
+                let verbObj = fullDB[cb.dataset.idx];
+                cb.checked = pickedV1s.includes(verbObj.v1);
+            });
+
+            saveSelection();
+            renderCheckboxes();
+            updateRandomProgressUI();
+        }
+
+        function resetRandomHistory() {
+            if (confirm("Сбросить историю пройденных глаголов, чтобы все 100 слов снова стали доступны для рандома?")) {
+                usedRandomVerbs = [];
+                localStorage.setItem('gamer_verbs_random_used', JSON.stringify(usedRandomVerbs));
+                document.getElementById('random-10-mode').checked = false;
+                renderCheckboxes();
+                updateRandomProgressUI();
+            }
+        }
+        // -------------------------------------------
+
         function saveSelection() {
             let selected = [];
             document.querySelectorAll('.verb-checkbox input:checked').forEach(cb => {
                 selected.push(fullDB[cb.dataset.idx].v1);
             });
+            savedSelection = selected;
             localStorage.setItem('gamer_verbs_selection', JSON.stringify(selected));
         }
 
@@ -523,12 +631,15 @@
             container.innerHTML = "";
             fullDB.forEach((v, i) => {
                 const label = document.createElement('label');
-                label.className = 'verb-checkbox';
+                const isUsed = usedRandomVerbs.includes(v.v1);
+                label.className = 'verb-checkbox' + (isUsed ? ' used-verb' : '');
                 const isCustom = i < customDB.length ? 'style="color:var(--primary);"' : '';
                 const isChecked = savedSelection.includes(v.v1) ? 'checked' : '';
-                label.innerHTML = `<input type="checkbox" data-idx="${i}" ${isChecked} onchange="saveSelection()"> <span ${isCustom}>${v.v1} - ${v.v2} - ${v.v3}</span>`;
+                const usedBadge = isUsed ? ' ✅' : '';
+                label.innerHTML = `<input type="checkbox" data-idx="${i}" ${isChecked} onchange="saveSelection()"> <span ${isCustom} title="${v.ru}">${v.v1} - ${v.v2} - ${v.v3}${usedBadge}</span>`;
                 container.appendChild(label);
             });
+            updateRandomProgressUI();
         }
 
         function searchVerbs() {
@@ -577,8 +688,17 @@
             }
         }
 
-        function selectAll(s) { document.querySelectorAll('.verb-checkbox input').forEach(cb => cb.checked = s); saveSelection(); }
-        function selectTop(n) { selectAll(false); document.querySelectorAll('.verb-checkbox input').forEach((cb, i) => { if(i<n) cb.checked=true; }); saveSelection(); }
+        function selectAll(s) { 
+            document.getElementById('random-10-mode').checked = false;
+            document.querySelectorAll('.verb-checkbox input').forEach(cb => cb.checked = s); 
+            saveSelection(); 
+        }
+        function selectTop(n) { 
+            document.getElementById('random-10-mode').checked = false;
+            selectAll(false); 
+            document.querySelectorAll('.verb-checkbox input').forEach((cb, i) => { if(i<n) cb.checked=true; }); 
+            saveSelection(); 
+        }
         function changeFont() { document.documentElement.style.setProperty('--font-display', `"${document.getElementById('font-select').value}", sans-serif`); }
         function changeColors() {
             document.documentElement.style.setProperty('--primary', document.getElementById('color-primary').value);
@@ -592,6 +712,15 @@
             document.querySelectorAll('.verb-checkbox input:checked').forEach(cb => playList.push(fullDB[cb.dataset.idx]));
             if(!playList.length) return alert("Select at least one verb!");
             
+            if (document.getElementById('random-10-mode').checked) {
+                playList.forEach(v => {
+                    if (!usedRandomVerbs.includes(v.v1)) {
+                        usedRandomVerbs.push(v.v1);
+                    }
+                });
+                localStorage.setItem('gamer_verbs_random_used', JSON.stringify(usedRandomVerbs));
+            }
+
             isTwoForms = document.getElementById('two-forms-mode').checked; // СЧИТЫВАЕМ НАСТРОЙКУ 2 ФОРМ
 
             document.body.style.backgroundImage = `url('${document.getElementById('bg-url').value}')`;
@@ -603,7 +732,9 @@
 
         function showTab(n) {
             document.querySelectorAll('.stage-container').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.stage-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.stage-btn').forEach(b => {
+                if(b.id && b.id.startsWith('btn-')) b.classList.remove('active');
+            });
             document.getElementById(`stage-${n}`).classList.add('active');
             document.getElementById(`btn-${n}`).classList.add('active');
         }
